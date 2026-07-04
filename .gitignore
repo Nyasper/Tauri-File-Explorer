@@ -1,0 +1,68 @@
+# ---------- OS / Editor ----------
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*.swo
+*~
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+*.iml
+
+# ---------- Node ----------
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.npm/
+.pnpm-store/
+.yarn/cache
+.yarn/install-state.gz
+
+# ---------- Svelte / SvelteKit / Vite ----------
+/build/
+/.svelte-kit/
+/package/
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
+*.local
+
+# ---------- TypeScript ----------
+*.tsbuildinfo
+
+# ---------- Environment / Secrets ----------
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# ---------- Tauri ----------
+/src-tauri/target/
+/src-tauri/gen/
+/src-tauri/gen/schemas/
+/src-tauri/WixTools/
+/src-tauri/.cmake/
+/src-tauri/Cargo.lock
+/src-tauri/tauri.conf.json.merge
+
+# ---------- Testing / Coverage ----------
+coverage/
+.nyc_output/
+*.lcov
+.pytest_cache/
+
+# ---------- Logs / Cache ----------
+*.log
+logs/
+.cache/
+.eslintcache
+.stylelintcache
+
+# ---------- Build / Distribution ----------
+dist/
+out/
+*.tgz
+*.tar.gz
