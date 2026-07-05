@@ -1,6 +1,7 @@
 <script lang="ts">
-  import { explorerState } from '../state/explorer.svelte';
+  import { explorerState } from '../state/explorer.state.svelte';
   import { themeService } from '$lib/services/theme.service.svelte';
+  import HelpModal from './HelpModal.svelte';
 
   // Helper to extract leaf folder name from path for tab title
   function getTabTitle(path: string): string {
@@ -82,14 +83,31 @@
   </div>
 
   <div class="tab-bar-actions">
+
+    <!-- Help Button -->
+    <HelpModal bind:isModalOpen={explorerState.isModalOpen} />
     <button 
-      class="theme-toggle-btn" 
+      class="tab-action-btn help-btn" 
+      title="Help"
+      aria-label="Help"
+      onclick={() => explorerState.isModalOpen = true}
+    >
+      <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"></circle>
+        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+        <line x1="12" y1="17" x2="12.01" y2="17"></line>
+      </svg>
+    </button>
+
+    <!-- Theme Toggle Button -->
+    <button 
+      class="tab-action-btn theme-toggle-btn" 
       onclick={() => themeService.toggleTheme()} 
       title="Toggle Light/Dark Theme"
       aria-label="Theme toggle"
     >
       {#if themeService.theme === 'dark'}
-        <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+        <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="12" r="5"></circle>
           <line x1="12" y1="1" x2="12" y2="3"></line>
           <line x1="12" y1="21" x2="12" y2="23"></line>
@@ -101,10 +119,22 @@
           <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
         </svg>
       {:else}
-        <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+        <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
           <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
         </svg>
       {/if}
+    </button>
+
+    <!-- Settings Button -->
+    <button 
+      class="tab-action-btn settings-btn" 
+      title="Settings"
+      aria-label="Settings"
+    >
+      <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"></circle>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+      </svg>
     </button>
   </div>
 </div>
@@ -234,7 +264,7 @@
     flex-shrink: 0;
   }
 
-  .theme-toggle-btn {
+  .tab-action-btn {
     width: 28px;
     height: 28px;
     border-radius: var(--radius-md);
@@ -246,13 +276,20 @@
     transition: background-color var(--transition-fast), color var(--transition-fast), transform var(--transition-fast);
   }
 
-  .theme-toggle-btn:hover {
+  .tab-action-btn:hover {
     background-color: rgba(255, 255, 255, 0.06);
     color: var(--text-primary);
+  }
+
+  :root[data-theme="light"] .tab-action-btn:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+  }
+
+  .theme-toggle-btn:hover {
     transform: rotate(15deg);
   }
 
-  :root[data-theme="light"] .theme-toggle-btn:hover {
-    background-color: rgba(0, 0, 0, 0.05);
+  .settings-btn:hover {
+    transform: rotate(30deg);
   }
 </style>

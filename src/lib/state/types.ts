@@ -5,6 +5,7 @@ export interface FileEntry {
   is_file: boolean;
   size: number; // Bytes, or folder size once calculated
   is_size_loading?: boolean;
+  size_calculated?: boolean;
   modified: number; // Unix timestamp in milliseconds
   readonly: boolean;
   permissions?: string;
@@ -12,10 +13,10 @@ export interface FileEntry {
 }
 
 export interface ViewState {
-  viewMode: 'list' | 'grid';
+  viewMode: "list" | "grid";
   searchQuery: string;
-  sortBy: 'name' | 'size' | 'modified';
-  sortOrder: 'asc' | 'desc';
+  sortBy: "name" | "size" | "modified";
+  sortOrder: "asc" | "desc";
 }
 
 export interface Tab {
@@ -26,4 +27,9 @@ export interface Tab {
   viewState: ViewState;
   files: FileEntry[]; // Loaded file entries specific to this tab
   splitView: Tab | null; // Support side-by-side active paths within the same tab
+}
+
+export interface CacheEntry {
+  entries: FileEntry[];
+  timestamp: number;
 }

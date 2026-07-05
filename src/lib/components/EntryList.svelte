@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { FileEntry } from '../state/types';
-  import { explorerState } from '../state/explorer.svelte';
+  import { explorerState } from '../state/explorer.state.svelte';
 
   // Svelte 5 Props using runes
   let { 
@@ -22,7 +22,7 @@
   function formatSize(bytes: number, isDir: boolean, isSizeLoading?: boolean): string {
     if (isDir) {
       if (isSizeLoading) return 'Calculating...';
-      return bytes > 0 ? formatBytes(bytes) : '--';
+      return bytes > 0 ? formatBytes(bytes) : '-';
     }
     return formatBytes(bytes);
   }

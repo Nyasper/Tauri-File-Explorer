@@ -20,12 +20,14 @@ This document serves as the official specification, design pattern reference, an
 ## 2. Key Features Spec
 
 ### A. Navigation & Views
+
 - **Directory Navigation**: Back/forward navigation, custom path entry, and click-to-navigate.
 - **Navigation History**: Tracking of navigated paths per tab to facilitate browser-like back and forward states.
 - **List & Grid Views**: Support for switching between list view (detailed columns: name, size, modified date, permissions) and grid view (large visual icons and names) at any time.
 - **Type-based Icons**: Files must show specific icons corresponding to their MIME type or extension, and folders must show folder icons.
 
 ### B. File Operations
+
 - **Listing**: Efficient reading and sorting of files and directories (directories first, then alphabetically).
 - **Modification**: Creating, renaming, and deleting files and folders.
 - **Transfer**: Copying and moving files and folders.
@@ -33,11 +35,13 @@ This document serves as the official specification, design pattern reference, an
 - **Drag & Drop**: Dragging items within the file list to copy/move them between folders/views.
 
 ### C. Advanced UI Layouts
+
 - **Tabs**: Support for multiple tabs. Opening a new tab defaults to the current active path.
 - **Duplicate Tabs**: Ability to duplicate the active tab's path and history into a new tab.
 - **Splitted View**: Ability to divide a single view panel into side-by-side active paths (split-view panes) inside the same tab or window.
 
 ### D. Performance & Optimizations
+
 - **Background Size Calculation**: Calculating directory sizes recursively in the background (using Rust threads/tasks) so the UI remains fluid.
 - **Directory Caching**: A path-based caching mechanism to avoid redundant disk reads.
 - **Fast Indexed Search**: Quick search implementation using indices generated or managed by the Rust backend.
@@ -47,9 +51,11 @@ This document serves as the official specification, design pattern reference, an
 ## 3. Frontend Architecture (Svelte 5 & TypeScript)
 
 ### A. Reactive State Management (Classes + Runes)
+
 Global and local component states must be written using **Svelte 5 Runes** inside independent `.svelte.ts` files, encapsulated in Classes. This maintains an SPA-level single source of truth that is easily importable.
 
 #### Example TypeScript Definitions (`src/lib/state/types.ts`)
+
 ```typescript
 export interface FileEntry {
   name: string;
@@ -65,10 +71,10 @@ export interface FileEntry {
 }
 
 export interface ViewState {
-  viewMode: 'list' | 'grid';
+  viewMode: "list" | "grid";
   searchQuery: string;
-  sortBy: 'name' | 'size' | 'modified';
-  sortOrder: 'asc' | 'desc';
+  sortBy: "name" | "size" | "modified";
+  sortOrder: "asc" | "desc";
 }
 
 export interface Tab {
@@ -81,14 +87,15 @@ export interface Tab {
 }
 ```
 
-#### Example State Manager (`src/lib/state/explorer.svelte.ts`)
+#### Example State Manager (`src/lib/state/explorer.state.svelte.ts`)
+
 ```typescript
-import { Tab, FileEntry } from './types';
+import { Tab, FileEntry } from "./types";
 
 export class ExplorerState {
   // Runes for reactive states
   tabs = $state<Tab[]>([]);
-  activeTabId = $state<string>('');
+  activeTabId = $state<string>("");
 
   constructor() {
     // Initialize with a default tab
@@ -96,29 +103,29 @@ export class ExplorerState {
   }
 
   get activeTab() {
-    return this.tabs.find(t => t.id === this.activeTabId) || this.tabs[0];
+    return this.tabs.find((t) => t.id === this.activeTabId) || this.tabs[0];
   }
 
-  addTab(path: string = '/') {
+  addTab(path: string = "/") {
     const newTab: Tab = {
       id: crypto.randomUUID(),
       currentPath: path,
       history: [path],
       historyIndex: 0,
       viewState: {
-        viewMode: 'list',
-        searchQuery: '',
-        sortBy: 'name',
-        sortOrder: 'asc'
+        viewMode: "list",
+        searchQuery: "",
+        sortBy: "name",
+        sortOrder: "asc",
       },
-      splitView: null
+      splitView: null,
     };
     this.tabs.push(newTab);
     this.activeTabId = newTab.id;
   }
 
   duplicateTab(tabId: string) {
-    const original = this.tabs.find(t => t.id === tabId);
+    const original = this.tabs.find((t) => t.id === tabId);
     if (!original) return;
 
     const duplicate: Tab = {
@@ -127,17 +134,19 @@ export class ExplorerState {
       history: [...original.history],
       historyIndex: original.historyIndex,
       viewState: { ...original.viewState },
-      splitView: original.splitView ? { ...original.splitView, id: crypto.randomUUID() } : null
+      splitView: original.splitView
+        ? { ...original.splitView, id: crypto.randomUUID() }
+        : null,
     };
 
-    const index = this.tabs.findIndex(t => t.id === tabId);
+    const index = this.tabs.findIndex((t) => t.id === tabId);
     this.tabs.splice(index + 1, 0, duplicate);
   }
 
   closeTab(tabId: string) {
     if (this.tabs.length <= 1) return; // Keep at least one
-    const index = this.tabs.findIndex(t => t.id === tabId);
-    this.tabs = this.tabs.filter(t => t.id !== tabId);
+    const index = this.tabs.findIndex((t) => t.id === tabId);
+    this.tabs = this.tabs.filter((t) => t.id !== tabId);
     if (this.activeTabId === tabId) {
       this.activeTabId = this.tabs[Math.max(0, index - 1)].id;
     }
@@ -145,7 +154,7 @@ export class ExplorerState {
 
   // Back/Forward Navigation
   navigate(tabId: string, path: string) {
-    const tab = this.tabs.find(t => t.id === tabId);
+    const tab = this.tabs.find((t) => t.id === tabId);
     if (!tab) return;
 
     // Truncate history forward if we were in the middle of history
@@ -156,7 +165,7 @@ export class ExplorerState {
   }
 
   goBack(tabId: string) {
-    const tab = this.tabs.find(t => t.id === tabId);
+    const tab = this.tabs.find((t) => t.id === tabId);
     if (tab && tab.historyIndex > 0) {
       tab.historyIndex--;
       tab.currentPath = tab.history[tab.historyIndex];
@@ -164,7 +173,7 @@ export class ExplorerState {
   }
 
   goForward(tabId: string) {
-    const tab = this.tabs.find(t => t.id === tabId);
+    const tab = this.tabs.find((t) => t.id === tabId);
     if (tab && tab.historyIndex < tab.history.length - 1) {
       tab.historyIndex++;
       tab.currentPath = tab.history[tab.historyIndex];
@@ -177,7 +186,9 @@ export const explorerState = new ExplorerState();
 ```
 
 ### B. Svelte 5 Reusable Components
+
 Components should be clean, modular, and written using Svelte 5 runes and snippets.
+
 - **`ExplorerView`**: The primary component displaying directories. It must be generic and reusable, allowing customization of item layouts (e.g. List and Grid sub-components).
 - Component structure example:
   - `src/lib/components/ExplorerView.svelte`
@@ -192,6 +203,7 @@ Components should be clean, modular, and written using Svelte 5 runes and snippe
 Tauri must handle file system operations, heavy CPU operations, and multi-threaded calculations.
 
 ### Commands to implement:
+
 - `list_dir(path: String) -> Result<Vec<FileEntry>, String>`
 - `create_file(path: String, is_dir: bool) -> Result<(), String>`
 - `rename_file(old_path: String, new_path: String) -> Result<(), String>`
@@ -208,6 +220,7 @@ Tauri must handle file system operations, heavy CPU operations, and multi-thread
 To avoid lag when navigating between frequently visited folders, implement a path-based caching system on the frontend (or Rust backend with metadata matching).
 
 ### Caching Flow:
+
 1. Maintain a reactive cache Map/Dictionary of visited paths: `path -> { lastModified: number, entries: FileEntry[] }`.
 2. When navigating to `/home/Documents`:
    - Query directory metadata (fast check of `modified` date of the directory itself).

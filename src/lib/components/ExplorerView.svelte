@@ -1,10 +1,10 @@
 <script lang="ts">
-  import { onDestroy, onMount } from 'svelte';
-  import { explorerState } from '../state/explorer.svelte';
-  import type { FileEntry, Tab } from '../state/types';
+  import { explorerState } from '../state/explorer.state.svelte';
+  import type { Tab } from '../state/types';
   import * as api from '../explorer.api';
   import EntryList from './EntryList.svelte';
   import EntryGrid from './EntryGrid.svelte';
+  import { formatBytes } from '$lib/utils/formater';
 
   // Selected items state per pane
   let primarySelected = $state(new Set<string>());
@@ -21,6 +21,13 @@
   // Svelte 5 Derived views of active tab details
   const activeTab = $derived(explorerState.activeTab);
   const splitActive = $derived(!!activeTab?.splitView);
+
+  // Svelte 5 Derived total sizes of paths
+  const currentPathTotalSize = $derived(activeTab ? activeTab.files.reduce((acc, f) => acc + (f.size || 0), 0) : 0);
+
+  // For Splitted View
+  const secondaryTotalSize = $derived((activeTab && activeTab.splitView) ? activeTab.splitView.files.reduce((acc, f) => acc + (f.size || 0), 0) : 0);
+
 
   // Helper to get selection set based on side
   function getSelectionSet(side: 'primary' | 'secondary'): Set<string> {
@@ -262,10 +269,7 @@
     pane.viewState.viewMode = pane.viewState.viewMode === 'list' ? 'grid' : 'list';
   }
 
-  // Trigger calculations for directory sizes in background
-  function handleCalculateSizes(side: 'primary' | 'secondary') {
-    explorerState.calculateFolderSizesForPane(activeTab.id, side);
-  }
+
 
   // Toggle Splitted View
   function handleToggleSplit() {
@@ -391,7 +395,6 @@
           </div>
 
           <div class="actions-group">
-            <button onclick={() => handleCalculateSizes('primary')} title="Calculate folder sizes recursively">Calc Size</button>
             <button onclick={() => toggleViewMode('primary')} title="Toggle List/Grid">
               {#if activeTab.viewState.viewMode === 'list'}
                 <!-- Grid mode icon -->
@@ -431,10 +434,13 @@
 
         <!-- Status footer -->
         <div class="pane-footer">
-          <span>{activeTab.files.length} items</span>
-          {#if primarySelected.size > 0}
-            <span class="selection-count">| {primarySelected.size} items selected</span>
-          {/if}
+          <div class="footer-left">
+            <span>{activeTab.files.length} items</span>
+            {#if primarySelected.size > 0}
+              <span class="selection-count">| {primarySelected.size} items selected</span>
+            {/if}
+          </div>
+          <span class="footer-right">{formatBytes(currentPathTotalSize)}</span>
         </div>
       </div>
 
@@ -517,7 +523,6 @@
             </div>
 
             <div class="actions-group">
-              <button onclick={() => handleCalculateSizes('secondary')} title="Calculate folder sizes recursively">Calc Size</button>
               <button onclick={() => toggleViewMode('secondary')} title="Toggle List/Grid">
                 {#if activeTab.splitView.viewState.viewMode === 'list'}
                   <!-- Grid mode icon -->
@@ -557,10 +562,13 @@
 
           <!-- Status footer -->
           <div class="pane-footer">
-            <span>{activeTab.splitView.files.length} items</span>
-            {#if secondarySelected.size > 0}
-              <span class="selection-count">| {secondarySelected.size} items selected</span>
-            {/if}
+            <div class="footer-left">
+              <span>{activeTab.splitView.files.length} items</span>
+              {#if secondarySelected.size > 0}
+                <span class="selection-count">| {secondarySelected.size} items selected</span>
+              {/if}
+            </div>
+            <span class="footer-right">{formatBytes(secondaryTotalSize)}</span>
           </div>
         </div>
       {/if}
@@ -745,12 +753,23 @@
     background-color: var(--bg-secondary);
     border-top: 1px solid var(--border-color);
     display: flex;
+    justify-content: space-between;
     align-items: center;
     padding: 0 12px;
     font-size: 0.75rem;
     color: var(--text-muted);
-    gap: 8px;
     flex-shrink: 0;
+  }
+
+  .footer-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .footer-right {
+    font-family: monospace;
+    font-weight: 500;
   }
 
   .selection-count {

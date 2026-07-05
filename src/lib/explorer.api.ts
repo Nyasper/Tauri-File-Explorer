@@ -60,9 +60,10 @@ export async function searchIndex(query: string, rootPath: string): Promise<File
 }
 
 /**
- * Triggers asynchronous background folder size calculation.
- * Listens for the "folder-size-calculated" Tauri event to receive the size result.
+ * Wait for a specified number of milliseconds.
  */
-export async function calculateFolderSize(path: string): Promise<void> {
-  return invoke<void>("calculate_folder_size", { path });
+export async function sleep(ms: number): Promise<void> {
+  return invoke<void>("sleep", { ms });
 }
+
+

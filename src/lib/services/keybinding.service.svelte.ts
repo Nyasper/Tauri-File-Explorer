@@ -1,4 +1,44 @@
-import { explorerState } from "../state/explorer.svelte";
+import { explorerState } from "../state/explorer.state.svelte";
+
+interface ShortcutItem {
+  key: string;
+  action: string;
+  category: string;
+}
+
+export const globalShorcutsList: ShortcutItem[] = [
+  { key: "Esc", action: "Close Modal Window", category: "System" },
+  { key: "F1", action: "Open / Close Help Modal Window", category: "System" },
+  { key: "Ctrl + T", action: "New tab", category: "Tabs" },
+  { key: "Ctrl + W", action: "Close current tab", category: "Tabs" },
+  { key: "Right Click Tab", action: "Duplicate current tab", category: "Tabs" },
+  {
+    key: "Ctrl + Tab / Cmd + Tab",
+    action: "Switch to next tab",
+    category: "Tabs",
+  },
+  {
+    key: "Ctrl + Shift + Tab / Cmd + Shift + Tab",
+    action: "Switch to previous tab",
+    category: "Tabs",
+  },
+  {
+    key: "Alt + arrowleft",
+    action: "Go back",
+    category: "Tabs",
+  },
+  {
+    key: "Alt + arrowright",
+    action: "Go forward",
+    category: "Tabs",
+  },
+  { key: "F5", action: "Refresh folder view", category: "Files" },
+  { key: "F2", action: "Rename selected item", category: "Files" },
+  { key: "Del", action: "Delete selected items", category: "Files" },
+  { key: "Ctrl + C", action: "Copy selected items", category: "Files" },
+  { key: "Ctrl + X", action: "Cut selected items", category: "Files" },
+  { key: "Ctrl + V", action: "Paste clipboard items", category: "Files" },
+] as const;
 
 export function useKeybindingService() {
   console.debug("Keyboard Service initialized");
@@ -82,6 +122,23 @@ export function useKeybindingService() {
           explorerState.activeTabId,
           explorerState.activePaneSide,
         );
+        return;
+      }
+
+      // 5. F1 -> Toggle Help Modal
+      if (e.key === "F1") {
+        e.preventDefault();
+        console.debug("F1 Help shortcut pressed");
+        explorerState.isModalOpen = !explorerState.isModalOpen;
+        return;
+      }
+
+      // 6. Esc -> Close Modal Window
+      if (e.key === "Escape") {
+        if (!explorerState.isModalOpen) return;
+        e.preventDefault();
+        console.debug("Esc Help shortcut pressed");
+        explorerState.isModalOpen = false;
         return;
       }
     };
