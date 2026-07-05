@@ -251,11 +251,7 @@ pub fn delete_file(path: String) -> Result<(), String> {
         return Err(format!("Path does not exist: {}", path));
     }
 
-    if path_ref.is_dir() {
-        fs::remove_dir_all(path_ref).map_err(|e| format!("Failed to delete directory: {}", e))?;
-    } else {
-        fs::remove_file(path_ref).map_err(|e| format!("Failed to delete file: {}", e))?;
-    }
+    trash::delete(path_ref).map_err(|e| format!("Failed to move item to Recycle Bin: {}", e))?;
     Ok(())
 }
 

@@ -10,7 +10,7 @@ This document serves as the official specification, design pattern reference, an
 - **Package Manager**: Bun (used for dependency management and running scripts).
 - **Styling**: Vanilla CSS (highly polished, responsive layouts, supporting light/dark modes). No Tailwind CSS.
 - **Backend**: Tauri v2 + Rust (handles OS interaction, performance-critical file system operations, heavy search indexing, and background file/directory size computations).
-- **Communication**: Tauri IPC (Commands, Channels, and Events).
+- **Communication**: Tauri IPC (Commands, Channels, and Events). All invocations of Tauri Rust commands must be routed through the type-safe wrappers in [explorer.api.ts](file:///g:/Desktop/tauri-svelte-file-explorer/src/lib/explorer.api.ts). Direct use of Tauri's `invoke` in frontend components is strictly prohibited.
 - **Target OS**: Windows, macOS, Linux (cross-platform desktop application).
 - **Language**: English only for UI, logs, comments, and documentation.
 - **Git Branch**: All work must be carried out on the `feature` branch.
@@ -229,3 +229,5 @@ To avoid lag when navigating between frequently visited folders, implement a pat
 4. **Desktop App Styling**:
    - Disable default browser selection (`user-select: none`) where appropriate.
    - Adapt context menus and inputs to look like a desktop application.
+5. **Tauri IPC Calls**:
+   - All backend calls MUST be invoked via the wrappers in [explorer.api.ts](file:///g:/Desktop/tauri-svelte-file-explorer/src/lib/explorer.api.ts). Direct calls to Tauri's `invoke` from components are disallowed.
