@@ -1,6 +1,7 @@
 <script lang="ts">
   import { explorerState } from '../state/explorer.state.svelte';
   import { themeService } from '$lib/services/theme.service.svelte';
+  import { configService } from '$lib/services/config.service.svelte';
   import HelpModal from './HelpModal.svelte';
 
   // Helper to extract leaf folder name from path for tab title
@@ -27,6 +28,11 @@
   function handleDuplicateTab(e: MouseEvent, id: string) {
     e.preventDefault();
     explorerState.duplicateTab(id);
+  }
+
+  function handleConfig(e: MouseEvent) {
+    e.preventDefault();
+    configService.config = {...configService.config, defaultViewMode: configService.config.defaultViewMode === 'list' ? 'grid' : 'list'};
   }
 </script>
 
@@ -71,7 +77,7 @@
     <!-- Add New Tab Button -->
     <button 
       class="add-tab-btn" 
-      onclick={() => explorerState.addTab('/')} 
+      onclick={() => explorerState.addTab()} 
       title="Open New Tab"
       aria-label="New Tab"
     >
@@ -83,7 +89,6 @@
   </div>
 
   <div class="tab-bar-actions">
-
     <!-- Help Button -->
     <HelpModal bind:isModalOpen={explorerState.isModalOpen} />
     <button 
@@ -130,6 +135,7 @@
       class="tab-action-btn settings-btn" 
       title="Settings"
       aria-label="Settings"
+      onclick={handleConfig}
     >
       <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="12" cy="12" r="3"></circle>

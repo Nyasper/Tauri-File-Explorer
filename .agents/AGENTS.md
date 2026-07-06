@@ -244,3 +244,7 @@ To avoid lag when navigating between frequently visited folders, implement a pat
    - Adapt context menus and inputs to look like a desktop application.
 5. **Tauri IPC Calls**:
    - All backend calls MUST be invoked via the wrappers in [explorer.api.ts](file:///g:/Desktop/tauri-svelte-file-explorer/src/lib/explorer.api.ts). Direct calls to Tauri's `invoke` from components are disallowed.
+6. **File Naming Conventions**:
+   - Svelte Component files: `PascalCase.svelte` (e.g., `TabBar.svelte`).
+   - Svelte 5 Reactive Services/State: `kebab-case.role.svelte.ts` (e.g., `keybinding.service.svelte.ts`).
+   - Pure TypeScript helpers/APIs (no Svelte runes): `kebab-case.ts` (e.g., `explorer.api.ts`).

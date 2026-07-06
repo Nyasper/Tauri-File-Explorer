@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { FileEntry } from '../state/types';
+  import type { FileEntry } from '../types/explorer.types';
 
   // Svelte 5 Props using runes
   let { 

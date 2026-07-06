@@ -1,6 +1,6 @@
 <script lang="ts">
   import { explorerState } from '../state/explorer.state.svelte';
-  import type { Tab } from '../state/types';
+  import type { Tab } from '../types/explorer.types';
   import * as api from '../explorer.api';
   import EntryList from './EntryList.svelte';
   import EntryGrid from './EntryGrid.svelte';

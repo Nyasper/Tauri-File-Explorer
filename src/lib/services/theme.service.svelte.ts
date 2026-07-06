@@ -1,7 +1,7 @@
 import { browser } from "$app/env";
 
 export class ThemeService {
-  theme = $state<"dark" | "light">("dark");
+  theme: "dark" | "light" = $state("dark");
 
   constructor() {
     if (browser) {

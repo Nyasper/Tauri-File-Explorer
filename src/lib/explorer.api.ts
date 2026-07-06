@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { FileEntry } from "./state/types";
+import type { FileEntry } from "./types/explorer.types";
 
 /**
  * Lists the contents of the directory at the specified path.
@@ -19,7 +19,10 @@ export async function createFile(path: string, isDir: boolean): Promise<void> {
 /**
  * Renames/moves a file or directory from oldPath to newPath.
  */
-export async function renameFile(oldPath: string, newPath: string): Promise<void> {
+export async function renameFile(
+  oldPath: string,
+  newPath: string,
+): Promise<void> {
   return invoke<void>("rename_file", { oldPath, newPath });
 }
 
@@ -55,7 +58,10 @@ export async function openFile(path: string): Promise<void> {
 /**
  * Performs a fast, indexed search for files and folders under rootPath.
  */
-export async function searchIndex(query: string, rootPath: string): Promise<FileEntry[]> {
+export async function searchIndex(
+  query: string,
+  rootPath: string,
+): Promise<FileEntry[]> {
   return invoke<FileEntry[]>("search_index", { query, rootPath });
 }
 
@@ -65,5 +71,3 @@ export async function searchIndex(query: string, rootPath: string): Promise<File
 export async function sleep(ms: number): Promise<void> {
   return invoke<void>("sleep", { ms });
 }
-
-

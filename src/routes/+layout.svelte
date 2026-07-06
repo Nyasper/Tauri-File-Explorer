@@ -5,6 +5,7 @@
 </script>
 
 <div class="app-container animate-fade-in">
+
   {@render children()}
 </div>
 

@@ -1,12 +1,17 @@
-import type { Tab, ViewState, CacheEntry } from "./types";
+import type { Tab, ViewState, CacheEntry } from "../types/explorer.types";
 import * as explorerApi from "../explorer.api";
+import { browser } from "$app/env";
+import { configService } from "$lib/services/config.service.svelte";
 
 export class ExplorerState {
   // Runes for reactive states
-  tabs = $state<Tab[]>([]);
-  activeTabId = $state<string>("");
-  activePaneSide = $state<"primary" | "secondary">("primary"); // Tracks active pane in split-view
-  isModalOpen = $state<boolean>(false);
+  tabs: Tab[] = $state([]);
+  activeTabId = $state("");
+  activePaneSide: "primary" | "secondary" = $state("primary"); // Tracks active pane in split-view
+  isModalOpen = $state(false);
+  #activeTab: Tab = $derived(
+    this.tabs.find((t) => t.id === this.activeTabId) || this.tabs[0],
+  );
 
   // Cache map for visited paths
   private cache = new Map<string, CacheEntry>();
@@ -15,14 +20,57 @@ export class ExplorerState {
   private defaultPath = "";
 
   constructor() {
-    // Determine default path based on browser environment vs native Tauri
-    this.defaultPath = "/";
+    if (!browser) return;
+    // Determine initial default path (will fall back to "/" before config loads)
+    this.defaultPath =
+      configService.config.defaultPath === "root"
+        ? "/"
+        : configService.config.defaultPath;
     // Initialize default tab
     this.addTab(this.defaultPath);
+
+    // Watch for config initialization to apply the correct defaults to the initial tab
+    $effect.root(() => {
+      $effect(() => {
+        // if (configService.configInitialized) {
+        //   console.log("config updated from explorer state...");
+        //   const firstTab = this.tabs[0];
+        //   if (
+        //     firstTab &&
+        //     firstTab.historyIndex === 0 &&
+        //     (firstTab.history[0] === "/" || firstTab.history[0] === "root")
+        //   ) {
+        //     // Apply loaded config settings
+        //     const configSortBy = configService.config.sort.by;
+        //     let sortBy: "name" | "size" | "modified" = "name";
+        //     if (configSortBy === "size") {
+        //       sortBy = "size";
+        //     } else if (configSortBy === "date") {
+        //       sortBy = "modified";
+        //     }
+        //     firstTab.viewState.sortBy = sortBy;
+        //     firstTab.viewState.sortOrder = configService.config.sort.order;
+        //     const resolvedDefaultPath =
+        //       configService.config.defaultPath === "root"
+        //         ? "/"
+        //         : configService.config.defaultPath;
+        //     this.defaultPath = resolvedDefaultPath;
+        //     firstTab.currentPath = resolvedDefaultPath;
+        //     firstTab.history = [resolvedDefaultPath];
+        //     // Reload the directory with the new sorting and path applied
+        //     this.loadDirectoryForTab(
+        //       firstTab.id,
+        //       "primary",
+        //       resolvedDefaultPath,
+        //     );
+        //   }
+        // }
+      });
+    });
   }
 
   get activeTab(): Tab {
-    return this.tabs.find((t) => t.id === this.activeTabId) || this.tabs[0];
+    return this.#activeTab;
   }
 
   // Helper to get active pane (primary tab or secondary split-pane)
@@ -35,16 +83,24 @@ export class ExplorerState {
 
   // Add a new tab
   addTab(path: string = "/") {
+    const configSortBy = configService.config.sort.by;
+    let sortBy: "name" | "size" | "modified" = "name";
+    if (configSortBy === "size") {
+      sortBy = "size";
+    } else if (configSortBy === "date") {
+      sortBy = "modified";
+    }
+
     const newTab: Tab = {
       id: crypto.randomUUID(),
       currentPath: path,
       history: [path],
       historyIndex: 0,
       viewState: {
-        viewMode: "list",
+        viewMode: configService.config.defaultViewMode,
         searchQuery: "",
-        sortBy: "name",
-        sortOrder: "asc",
+        sortBy,
+        sortOrder: configService.config.sort.order,
       },
       files: [],
       splitView: null,
