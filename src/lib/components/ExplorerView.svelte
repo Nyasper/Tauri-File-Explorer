@@ -5,6 +5,7 @@
   import EntryList from './EntryList.svelte';
   import EntryGrid from './EntryGrid.svelte';
   import { formatBytes } from '$lib/utils/formater';
+  import { fade } from 'svelte/transition';
 
   // Selected items state per pane
   let primarySelected = $state(new Set<string>());
@@ -412,24 +413,28 @@
 
         <!-- Directory content container -->
         <div class="pane-content-container">
-          {#if activeTab.viewState.viewMode === 'list'}
-            <EntryList 
-              files={activeTab.files}
-              selectedPaths={primarySelected}
-              onNavigate={(p) => handleNavigate('primary', p)}
-              onOpenFile={handleOpenFile}
-              onToggleSelect={(p, m) => toggleSelection('primary', p, m)}
-              paneSide="primary"
-            />
-          {:else}
-            <EntryGrid 
-              files={activeTab.files}
-              selectedPaths={primarySelected}
-              onNavigate={(p) => handleNavigate('primary', p)}
-              onOpenFile={handleOpenFile}
-              onToggleSelect={(p, m) => toggleSelection('primary', p, m)}
-            />
-          {/if}
+          {#key activeTab.currentPath + activeTab.viewState.viewMode}
+            <div class="transition-wrapper" in:fade={{ duration: 150 }}>
+              {#if activeTab.viewState.viewMode === 'list'}
+                <EntryList 
+                  files={activeTab.files}
+                  selectedPaths={primarySelected}
+                  onNavigate={(p) => handleNavigate('primary', p)}
+                  onOpenFile={handleOpenFile}
+                  onToggleSelect={(p, m) => toggleSelection('primary', p, m)}
+                  paneSide="primary"
+                />
+              {:else}
+                <EntryGrid 
+                  files={activeTab.files}
+                  selectedPaths={primarySelected}
+                  onNavigate={(p) => handleNavigate('primary', p)}
+                  onOpenFile={handleOpenFile}
+                  onToggleSelect={(p, m) => toggleSelection('primary', p, m)}
+                />
+              {/if}
+            </div>
+          {/key}
         </div>
 
         <!-- Status footer -->
@@ -446,7 +451,7 @@
 
       <!-- Secondary Split Pane -->
       {#if activeTab.splitView}
-        <div class="split-divider"></div>
+        <div class="split-divider" transition:fade={{ duration: 150 }}></div>
         <div 
           class="pane-pane secondary-pane" 
           class:focused={explorerState.activePaneSide === 'secondary'}
@@ -455,6 +460,7 @@
           tabindex="0"
           role="application"
           aria-label="Secondary explorer pane"
+          transition:fade={{ duration: 150 }}
         >
           <!-- Nav Controls Header -->
           <div class="pane-header">
@@ -540,24 +546,28 @@
 
           <!-- Directory content container -->
           <div class="pane-content-container">
-            {#if activeTab.splitView.viewState.viewMode === 'list'}
-              <EntryList 
-                files={activeTab.splitView.files}
-                selectedPaths={secondarySelected}
-                onNavigate={(p) => handleNavigate('secondary', p)}
-                onOpenFile={handleOpenFile}
-                onToggleSelect={(p, m) => toggleSelection('secondary', p, m)}
-                paneSide="secondary"
-              />
-            {:else}
-              <EntryGrid 
-                files={activeTab.splitView.files}
-                selectedPaths={secondarySelected}
-                onNavigate={(p) => handleNavigate('secondary', p)}
-                onOpenFile={handleOpenFile}
-                onToggleSelect={(p, m) => toggleSelection('secondary', p, m)}
-              />
-            {/if}
+            {#key activeTab.splitView.currentPath + activeTab.splitView.viewState.viewMode}
+              <div class="transition-wrapper" in:fade={{ duration: 150 }}>
+                {#if activeTab.splitView.viewState.viewMode === 'list'}
+                  <EntryList 
+                    files={activeTab.splitView.files}
+                    selectedPaths={secondarySelected}
+                    onNavigate={(p) => handleNavigate('secondary', p)}
+                    onOpenFile={handleOpenFile}
+                    onToggleSelect={(p, m) => toggleSelection('secondary', p, m)}
+                    paneSide="secondary"
+                  />
+                {:else}
+                  <EntryGrid 
+                    files={activeTab.splitView.files}
+                    selectedPaths={secondarySelected}
+                    onNavigate={(p) => handleNavigate('secondary', p)}
+                    onOpenFile={handleOpenFile}
+                    onToggleSelect={(p, m) => toggleSelection('secondary', p, m)}
+                  />
+                {/if}
+              </div>
+            {/key}
           </div>
 
           <!-- Status footer -->
@@ -746,6 +756,11 @@
     flex-grow: 1;
     overflow: hidden;
     position: relative;
+  }
+
+  .transition-wrapper {
+    width: 100%;
+    height: 100%;
   }
 
   .pane-footer {

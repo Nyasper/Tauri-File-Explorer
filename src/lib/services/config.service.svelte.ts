@@ -33,15 +33,45 @@ export class ConfigService {
       this.#store = new LazyStore("config.json");
       this.initConfig();
 
+      // Listen for system theme changes
+      const systemMedia = window.matchMedia("(prefers-color-scheme: dark)");
+      systemMedia.addEventListener("change", (e) => {
+        if (this.config.defaultTheme === "system") {
+          this.applyTheme(e.matches ? "dark" : "light");
+        }
+      });
+
       $effect.root(() => {
         $effect(() => {
           if (this.configInitialized) {
-            // Deeply track all properties of config
+            // Read all properties of config and update store if changed
             JSON.stringify(this.config);
-
-            // Only save to the store if initialization is complete to avoid overwriting with defaults on startup
             this.updateConfig(this.config);
             console.debug("config updated ", this.config);
+          }
+        });
+
+        // Reactively apply theme
+        $effect(() => {
+          const configTheme = this.config.defaultTheme;
+          if (configTheme === "system") {
+            this.applyTheme(systemMedia.matches ? "dark" : "light");
+          } else {
+            this.applyTheme(configTheme);
+          }
+        });
+
+        // Reactively apply accent color
+        $effect(() => {
+          const accentColor = this.config.defaultAccentColor;
+          document.documentElement.style.setProperty("--accent", accentColor);
+
+          const rgb = this.hexToRgb(accentColor);
+          if (rgb) {
+            document.documentElement.style.setProperty(
+              "--accent-rgb",
+              `${rgb.r}, ${rgb.g}, ${rgb.b}`,
+            );
           }
         });
       });
@@ -107,18 +137,20 @@ export class ConfigService {
     }
   }
 
-  private initFallback() {
-    try {
-      const saved = localStorage.getItem("app_config");
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        Object.assign(this.#defaultConfig, parsed);
-      }
-    } catch (err) {
-      console.error("Failed to load configuration from localStorage:", err);
-    } finally {
-      this.#configInitialized = true;
-    }
+  private applyTheme(theme: "dark" | "light") {
+    document.documentElement.setAttribute("data-theme", theme);
+    localStorage.setItem("theme", theme);
+  }
+
+  private hexToRgb(hex: string) {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result
+      ? {
+          r: parseInt(result[1], 16),
+          g: parseInt(result[2], 16),
+          b: parseInt(result[3], 16),
+        }
+      : null;
   }
 
   get configInitialized() {

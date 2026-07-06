@@ -8,7 +8,8 @@ export class ExplorerState {
   tabs: Tab[] = $state([]);
   activeTabId = $state("");
   activePaneSide: "primary" | "secondary" = $state("primary"); // Tracks active pane in split-view
-  isModalOpen = $state(false);
+  isHelpModalOpen = $state(false);
+  isConfigModalOpen = $state(false);
   #activeTab: Tab = $derived(
     this.tabs.find((t) => t.id === this.activeTabId) || this.tabs[0],
   );
@@ -33,7 +34,6 @@ export class ExplorerState {
     $effect.root(() => {
       $effect(() => {
         // if (configService.configInitialized) {
-        //   console.log("config updated from explorer state...");
         //   const firstTab = this.tabs[0];
         //   if (
         //     firstTab &&

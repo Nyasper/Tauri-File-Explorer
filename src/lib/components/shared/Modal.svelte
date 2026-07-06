@@ -1,21 +1,23 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import { explorerState } from '$lib/state/explorer.state.svelte';
+  import { fade } from 'svelte/transition';
 
   interface Props {
+    isOpen?: boolean;
     title: string;
     icon?: Snippet;
     children?: Snippet;
   }
 
   let {
+    isOpen = $bindable(false),
     title,
     icon,
     children
   }: Props = $props();
 
   function closeModal() {
-    explorerState.isModalOpen = false;
+    isOpen = false;
   }
 
   // Handle closing when clicking outside modal content
@@ -27,10 +29,10 @@
 
 </script>
 
-{#if explorerState.isModalOpen}
+{#if isOpen}
   <!-- svelte-ignore a11y_click_events_have_key_events -->
   <!-- svelte-ignore a11y_no_static_element_interactions -->
-  <div class="modal-overlay" onclick={handleClickOutside}>
+  <div class="modal-overlay" onclick={handleClickOutside} transition:fade={{ duration: 300 }}>
     <div class="modal-container">
       <div class="modal-header">
         <div class="modal-title">
@@ -76,10 +78,15 @@
     background: var(--bg-tertiary);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-lg);
-    width: 90%;
-    max-width: 500px;
+    width: 85vw;
+    max-width: 800px;
+    height: 75vh;
+    max-height: 650px;
+    min-height: 450px;
     box-shadow: var(--shadow-glass);
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
     animation: scaleUp var(--transition-normal) cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
@@ -90,6 +97,7 @@
     padding: 16px 20px;
     border-bottom: 1px solid var(--border-color);
     background: rgba(255, 255, 255, 0.02);
+    flex-shrink: 0;
   }
 
   .modal-title {
@@ -126,7 +134,7 @@
 
   .modal-content {
     padding: 20px;
-    max-height: 70vh;
+    flex-grow: 1;
     overflow-y: auto;
     color: var(--text-secondary);
     font-family: var(--font-body);

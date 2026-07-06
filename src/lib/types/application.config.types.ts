@@ -1,4 +1,4 @@
-type StartupMode = "root" | "home" | "last-session" | "custom";
+export type StartupMode = "root" | "home" | "last-session" | "custom";
 export type ViewMode = "list" | "grid";
 export type SortOrder = "asc" | "desc";
 export type SortBy = "name" | "size" | "type" | "date";

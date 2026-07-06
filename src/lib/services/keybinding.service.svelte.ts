@@ -8,7 +8,12 @@ interface ShortcutItem {
 
 export const globalShorcutsList: ShortcutItem[] = [
   { key: "Esc", action: "Close Modal Window", category: "System" },
-  { key: "F1", action: "Open / Close Help Modal Window", category: "System" },
+  { key: "F1", action: "Toggle Help Modal Window", category: "System" },
+  {
+    key: "Ctrl + O",
+    action: "Toggle Settings Modal Window",
+    category: "System",
+  },
   { key: "Ctrl + T", action: "New tab", category: "Tabs" },
   { key: "Ctrl + W", action: "Close current tab", category: "Tabs" },
   { key: "Right Click Tab", action: "Duplicate current tab", category: "Tabs" },
@@ -129,16 +134,26 @@ export function useKeybindingService() {
       if (e.key === "F1") {
         e.preventDefault();
         console.debug("F1 Help shortcut pressed");
-        explorerState.isModalOpen = !explorerState.isModalOpen;
+        explorerState.isHelpModalOpen = !explorerState.isHelpModalOpen;
         return;
       }
 
       // 6. Esc -> Close Modal Window
       if (e.key === "Escape") {
-        if (!explorerState.isModalOpen) return;
+        if (!explorerState.isHelpModalOpen && !explorerState.isConfigModalOpen)
+          return;
         e.preventDefault();
-        console.debug("Esc Help shortcut pressed");
-        explorerState.isModalOpen = false;
+        console.debug("Esc Help/Config shortcut pressed");
+        explorerState.isHelpModalOpen = false;
+        explorerState.isConfigModalOpen = false;
+        return;
+      }
+
+      // 7. Ctrl + o -> Toggle Settings Modal
+      if (ctrlKey && e.key.toLowerCase() === "o") {
+        e.preventDefault();
+        console.debug("Ctrl + O shortcut pressed");
+        explorerState.isConfigModalOpen = !explorerState.isConfigModalOpen;
         return;
       }
     };

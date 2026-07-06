@@ -1,8 +1,10 @@
 <script lang="ts">
   import { explorerState } from '../state/explorer.state.svelte';
-  import { themeService } from '$lib/services/theme.service.svelte';
   import { configService } from '$lib/services/config.service.svelte';
   import HelpModal from './HelpModal.svelte';
+  import ConfigModal from './ConfigModal.svelte';
+  import { fade } from 'svelte/transition';
+  import { flip } from 'svelte/animate';
 
   // Helper to extract leaf folder name from path for tab title
   function getTabTitle(path: string): string {
@@ -32,7 +34,7 @@
 
   function handleConfig(e: MouseEvent) {
     e.preventDefault();
-    configService.config = {...configService.config, defaultViewMode: configService.config.defaultViewMode === 'list' ? 'grid' : 'list'};
+    explorerState.isConfigModalOpen = true;
   }
 </script>
 
@@ -42,6 +44,8 @@
       <div 
         class="tab-item" 
         class:active={explorerState.activeTabId === tab.id}
+        transition:fade={{ duration: 150 }}
+        animate:flip={{ duration: 150 }}
         onclick={() => handleTabClick(tab.id)}
         oncontextmenu={(e) => handleDuplicateTab(e, tab.id)}
         onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleTabClick(tab.id); }}
@@ -90,44 +94,21 @@
 
   <div class="tab-bar-actions">
     <!-- Help Button -->
-    <HelpModal bind:isModalOpen={explorerState.isModalOpen} />
+    <HelpModal bind:isModalOpen={explorerState.isHelpModalOpen} />
+    <!-- Settings Modal -->
+    <ConfigModal bind:isModalOpen={explorerState.isConfigModalOpen} />
+    
     <button 
       class="tab-action-btn help-btn" 
       title="Help"
       aria-label="Help"
-      onclick={() => explorerState.isModalOpen = true}
+      onclick={() => explorerState.isHelpModalOpen = true}
     >
       <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="12" cy="12" r="10"></circle>
         <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
         <line x1="12" y1="17" x2="12.01" y2="17"></line>
       </svg>
-    </button>
-
-    <!-- Theme Toggle Button -->
-    <button 
-      class="tab-action-btn theme-toggle-btn" 
-      onclick={() => themeService.toggleTheme()} 
-      title="Toggle Light/Dark Theme"
-      aria-label="Theme toggle"
-    >
-      {#if themeService.theme === 'dark'}
-        <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="5"></circle>
-          <line x1="12" y1="1" x2="12" y2="3"></line>
-          <line x1="12" y1="21" x2="12" y2="23"></line>
-          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-          <line x1="1" y1="12" x2="3" y2="12"></line>
-          <line x1="21" y1="12" x2="23" y2="12"></line>
-          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-        </svg>
-      {:else}
-        <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-        </svg>
-      {/if}
     </button>
 
     <!-- Settings Button -->
@@ -289,10 +270,6 @@
 
   :root[data-theme="light"] .tab-action-btn:hover {
     background-color: rgba(0, 0, 0, 0.05);
-  }
-
-  .theme-toggle-btn:hover {
-    transform: rotate(15deg);
   }
 
   .settings-btn:hover {

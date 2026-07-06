@@ -5,7 +5,7 @@
 </script>
 
 
-<Modal title="Help & Shortcuts" {icon}>
+<Modal title="Help & Shortcuts" {icon} bind:isOpen={isModalOpen}>
   <section class="section">
     <h3>Keyboard Shortcuts</h3>
     <div class="shortcuts-grid">
@@ -79,7 +79,7 @@
 
   .shortcuts-grid {
     display: grid;
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 10px;
   }
 
