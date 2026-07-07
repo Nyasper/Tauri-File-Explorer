@@ -5,17 +5,13 @@
   // Svelte 5 Props using runes
   let { 
     files = [], 
-    selectedPaths, 
     onNavigate, 
     onOpenFile, 
-    onToggleSelect,
     paneSide
   }: {
     files: FileEntry[];
-    selectedPaths: Set<string>;
     onNavigate: (path: string) => void;
     onOpenFile: (path: string) => void;
-    onToggleSelect: (path: string, isMulti: boolean) => void;
     paneSide: 'primary' | 'secondary';
   } = $props();
 
@@ -57,9 +53,16 @@
 
   // Row selection handler
   function handleRowClick(e: MouseEvent, entry: FileEntry) {
+    e.stopPropagation();
     // Check if Ctrl or Shift is held down for multi-selection
     const isMulti = e.ctrlKey || e.metaKey || e.shiftKey;
-    onToggleSelect(entry.path, isMulti);
+    explorerState.toggleSelection(explorerState.activeTabId, paneSide, entry.path, isMulti);
+  }
+
+  // Background selection clearing handler
+  function handleBackgroundClick(e: MouseEvent) {
+    if (e.button !== 0) return; // Only left click clears selection
+    explorerState.clearSelection(explorerState.activeTabId, paneSide);
   }
 
   // Sort click handler
@@ -72,12 +75,13 @@
   const paneState = $derived(paneSide === 'secondary' && activeTab.splitView ? activeTab.splitView : activeTab);
   const sortBy = $derived(paneState.viewState.sortBy);
   const sortOrder = $derived(paneState.viewState.sortOrder);
+  const selectedPaths = $derived(paneState.selectedPaths);
 </script>
 
-<div class="table-container">
+<div class="table-container" onclick={handleBackgroundClick}>
   <table class="entries-table">
     <thead>
-      <tr>
+      <tr onclick={(e) => e.stopPropagation()}>
         <th onclick={() => handleSort('name')} class="col-name clickable">
           <div class="header-cell">
             <span>Name</span>

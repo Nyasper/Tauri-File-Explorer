@@ -1,4 +1,5 @@
 import type { Tab, ViewState, CacheEntry } from "../types/explorer.types";
+import { SvelteSet } from "svelte/reactivity";
 import * as explorerApi from "../explorer.api";
 import { browser } from "$app/env";
 import { configService } from "$lib/services/config.service.svelte";
@@ -103,6 +104,7 @@ export class ExplorerState {
         sortOrder: configService.config.sort.order,
       },
       files: [],
+      selectedPaths: new SvelteSet<string>(),
       splitView: null,
     };
     this.tabs.push(newTab);
@@ -129,6 +131,7 @@ export class ExplorerState {
       historyIndex: pane.historyIndex,
       viewState: cloneViewState(pane.viewState),
       files: [...pane.files],
+      selectedPaths: new SvelteSet<string>(pane.selectedPaths),
       splitView: null,
     });
 
@@ -139,6 +142,7 @@ export class ExplorerState {
       historyIndex: original.historyIndex,
       viewState: cloneViewState(original.viewState),
       files: [...original.files],
+      selectedPaths: new SvelteSet<string>(original.selectedPaths),
       splitView: original.splitView ? clonePane(original.splitView) : null,
     };
 
@@ -180,6 +184,7 @@ export class ExplorerState {
           sortOrder: tab.viewState.sortOrder,
         },
         files: [...tab.files],
+        selectedPaths: new SvelteSet<string>(),
         splitView: null,
       };
       this.activePaneSide = "secondary";
@@ -193,12 +198,41 @@ export class ExplorerState {
     this.activePaneSide = side;
   }
 
+  // Toggle selection for a path in a given tab/pane
+  toggleSelection(tabId: string, side: "primary" | "secondary", path: string, isMulti: boolean) {
+    const tab = this.tabs.find((t) => t.id === tabId);
+    if (!tab) return;
+    const pane = side === "secondary" && tab.splitView ? tab.splitView : tab;
+
+    if (isMulti) {
+      if (pane.selectedPaths.has(path)) {
+        pane.selectedPaths.delete(path);
+      } else {
+        pane.selectedPaths.add(path);
+      }
+    } else {
+      pane.selectedPaths.clear();
+      pane.selectedPaths.add(path);
+    }
+  }
+
+  // Clear selection for a given tab/pane
+  clearSelection(tabId: string, side: "primary" | "secondary") {
+    const tab = this.tabs.find((t) => t.id === tabId);
+    if (!tab) return;
+    const pane = side === "secondary" && tab.splitView ? tab.splitView : tab;
+    pane.selectedPaths.clear();
+  }
+
   // Navigate to a new path
   async navigate(tabId: string, side: "primary" | "secondary", path: string) {
     const tab = this.tabs.find((t) => t.id === tabId);
     if (!tab) return;
 
     const pane = side === "secondary" && tab.splitView ? tab.splitView : tab;
+
+    // Clear selection on navigation
+    pane.selectedPaths.clear();
 
     // Truncate history forward if we were in the middle of history
     pane.history = pane.history.slice(0, pane.historyIndex + 1);
@@ -218,6 +252,7 @@ export class ExplorerState {
     if (pane.historyIndex > 0) {
       pane.historyIndex--;
       pane.currentPath = pane.history[pane.historyIndex];
+      pane.selectedPaths.clear(); // Clear selection
       await this.loadDirectoryForTab(tabId, side, pane.currentPath);
     }
   }
@@ -231,6 +266,7 @@ export class ExplorerState {
     if (pane.historyIndex < pane.history.length - 1) {
       pane.historyIndex++;
       pane.currentPath = pane.history[pane.historyIndex];
+      pane.selectedPaths.clear(); // Clear selection
       await this.loadDirectoryForTab(tabId, side, pane.currentPath);
     }
   }
@@ -240,6 +276,8 @@ export class ExplorerState {
     const tab = this.tabs.find((t) => t.id === tabId);
     if (!tab) return;
     const pane = side === "secondary" && tab.splitView ? tab.splitView : tab;
+
+    pane.selectedPaths.clear(); // Clear selection
 
     // Clear cache for this path to force fresh disk read
     this.cache.delete(pane.currentPath);

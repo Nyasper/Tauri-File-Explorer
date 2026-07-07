@@ -7,6 +7,7 @@
   --font-body: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
 
   /* Color Palette - Dark Mode Defaults */
+  --bg-window: #04060a;
   --bg-primary: #0b0f17;
   --bg-secondary: rgba(17, 24, 39, 0.7);
   --bg-tertiary: rgba(31, 41, 55, 0.85);
@@ -55,6 +56,7 @@
 /* Light Theme overrides when explicit class is added or system preference is set */
 @media (prefers-color-scheme: light) {
   :root:not([data-theme="dark"]) {
+    --bg-window: #e2e8f0;
     --bg-primary: #f8fafc;
     --bg-secondary: rgba(241, 245, 249, 0.8);
     --bg-tertiary: rgba(255, 255, 255, 0.9);
@@ -81,6 +83,7 @@
 
 /* Explicit data-theme handling */
 :root[data-theme="light"] {
+  --bg-window: #e2e8f0;
   --bg-primary: #f8fafc;
   --bg-secondary: rgba(241, 245, 249, 0.8);
   --bg-tertiary: rgba(255, 255, 255, 0.9);
@@ -105,6 +108,7 @@
 }
 
 :root[data-theme="dark"] {
+  --bg-window: #04060a;
   --bg-primary: #0b0f17;
   --bg-secondary: rgba(17, 24, 39, 0.7);
   --bg-tertiary: rgba(31, 41, 55, 0.85);

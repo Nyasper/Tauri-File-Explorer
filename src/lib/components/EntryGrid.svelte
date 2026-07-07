@@ -1,20 +1,24 @@
 <script lang="ts">
   import type { FileEntry } from '../types/explorer.types';
+  import { explorerState } from '../state/explorer.state.svelte';
 
   // Svelte 5 Props using runes
   let { 
     files = [], 
-    selectedPaths, 
     onNavigate, 
-    onOpenFile, 
-    onToggleSelect 
+    onOpenFile,
+    paneSide
   }: {
     files: FileEntry[];
-    selectedPaths: Set<string>;
     onNavigate: (path: string) => void;
     onOpenFile: (path: string) => void;
-    onToggleSelect: (path: string, isMulti: boolean) => void;
+    paneSide: 'primary' | 'secondary';
   } = $props();
+
+  // Resolve selection from global state
+  const activeTab = $derived(explorerState.activeTab);
+  const paneState = $derived(paneSide === 'secondary' && activeTab.splitView ? activeTab.splitView : activeTab);
+  const selectedPaths = $derived(paneState.selectedPaths);
 
   // Helper to determine item extension category
   function getFileCategory(entry: FileEntry): 'folder' | 'image' | 'video' | 'audio' | 'code' | 'archive' | 'document' | 'file' {
@@ -54,12 +58,19 @@
 
   // Single click handler
   function handleClick(e: MouseEvent, entry: FileEntry) {
+    e.stopPropagation();
     const isMulti = e.ctrlKey || e.metaKey || e.shiftKey;
-    onToggleSelect(entry.path, isMulti);
+    explorerState.toggleSelection(explorerState.activeTabId, paneSide, entry.path, isMulti);
+  }
+
+  // Background selection clearing handler
+  function handleBackgroundClick(e: MouseEvent) {
+    if (e.button !== 0) return; // Only left click clears selection
+    explorerState.clearSelection(explorerState.activeTabId, paneSide);
   }
 </script>
 
-<div class="grid-container">
+<div class="grid-container" onclick={handleBackgroundClick}>
   {#if files.length === 0}
     <div class="empty-state">This folder is empty.</div>
   {:else}
@@ -71,7 +82,7 @@
           class:selected={selectedPaths.has(entry.path)}
           onclick={(e) => handleClick(e, entry)}
           ondblclick={() => handleDoubleClick(entry)}
-          onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); const isMulti = e.ctrlKey || e.metaKey || e.shiftKey; onToggleSelect(entry.path, isMulti); } }}
+          onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); const isMulti = e.ctrlKey || e.metaKey || e.shiftKey; explorerState.toggleSelection(explorerState.activeTabId, paneSide, entry.path, isMulti); } }}
           tabindex="0"
           role="button"
           aria-pressed={selectedPaths.has(entry.path)}

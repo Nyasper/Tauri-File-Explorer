@@ -1,15 +1,48 @@
 <script lang="ts">
   import { explorerState } from '../state/explorer.state.svelte';
   import type { Tab } from '../types/explorer.types';
-  import * as api from '../explorer.api';
+  import * as explorerApi from '../explorer.api';
   import EntryList from './EntryList.svelte';
   import EntryGrid from './EntryGrid.svelte';
   import { formatBytes } from '$lib/utils/formater';
   import { fade } from 'svelte/transition';
+  import { SvelteSet } from 'svelte/reactivity';
 
-  // Selected items state per pane
-  let primarySelected = $state(new Set<string>());
-  let secondarySelected = $state(new Set<string>());
+
+
+  $effect(() => {
+    const escKeyToDeselect = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        // Ignore if user is currently typing in an input field
+        if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+          return;
+        }
+
+        // Ignore if help or config modal is open (let the keybinding service close them first)
+        if (explorerState.isHelpModalOpen || explorerState.isConfigModalOpen) {
+          return;
+        }
+
+        // Deselect only the active pane's selected items (Premium dual-pane design)
+        if (explorerState.activePaneSide === 'secondary') {
+          if (secondarySelected.size > 0) {
+            e.preventDefault();
+            secondarySelected.clear();
+          }
+        } else {
+          if (primarySelected.size > 0) {
+            e.preventDefault();
+            primarySelected.clear();
+          }
+        }
+      }
+    };
+
+    window.addEventListener('keydown', escKeyToDeselect);
+    return () => {
+      window.removeEventListener('keydown', escKeyToDeselect);
+    };
+  });
 
   // Clipboard for copy-paste operations
   let clipboardPaths = $state<string[]>([]);
@@ -22,6 +55,10 @@
   // Svelte 5 Derived views of active tab details
   const activeTab = $derived(explorerState.activeTab);
   const splitActive = $derived(!!activeTab?.splitView);
+
+  // Selected items state per pane derived from active tab
+  const primarySelected = $derived(activeTab.selectedPaths);
+  const secondarySelected = $derived(activeTab.splitView ? activeTab.splitView.selectedPaths : new SvelteSet<string>());
 
   // Svelte 5 Derived total sizes of paths
   const currentPathTotalSize = $derived(activeTab ? activeTab.files.reduce((acc, f) => acc + (f.size || 0), 0) : 0);
@@ -47,43 +84,19 @@
     explorerState.focusPane(side);
   }
 
-  // Handle file selection toggling
-  function toggleSelection(side: 'primary' | 'secondary', path: string, isMulti: boolean) {
-    const selected = getSelectionSet(side);
-    if (isMulti) {
-      if (selected.has(path)) {
-        selected.delete(path);
-      } else {
-        selected.add(path);
-      }
-    } else {
-      selected.clear();
-      selected.add(path);
-    }
-    // Trigger reactivity
-    if (side === 'secondary') {
-      secondarySelected = new Set(selected);
-    } else {
-      primarySelected = new Set(selected);
-    }
-  }
+
 
   // Double click navigation handler
   async function handleNavigate(side: 'primary' | 'secondary', path: string) {
     const selected = getSelectionSet(side);
     selected.clear();
-    if (side === 'secondary') {
-      secondarySelected = new Set();
-    } else {
-      primarySelected = new Set();
-    }
     await explorerState.navigate(activeTab.id, side, path);
   }
 
   // Open file with system handler
   async function handleOpenFile(path: string) {
     try {
-      await api.openFile(path);
+      await explorerApi.openFile(path);
     } catch (err) {
       alert(`Could not open file: ${err}`);
     }
@@ -140,7 +153,7 @@
     const targetPath = `${pane.currentPath}${separator}${folderName.trim()}`;
 
     try {
-      await api.createFile(targetPath, true);
+      await explorerApi.createFile(targetPath, true);
       await explorerState.refresh(activeTab.id, side);
     } catch (err) {
       alert(`Error creating folder: ${err}`);
@@ -157,7 +170,7 @@
     const targetPath = `${pane.currentPath}${separator}${fileName.trim()}`;
 
     try {
-      await api.createFile(targetPath, false);
+      await explorerApi.createFile(targetPath, false);
       await explorerState.refresh(activeTab.id, side);
     } catch (err) {
       alert(`Error creating file: ${err}`);
@@ -179,13 +192,8 @@
     const newPath = `${parentDir}${newName.trim()}`;
 
     try {
-      await api.renameFile(oldPath, newPath);
+      await explorerApi.renameFile(oldPath, newPath);
       selected.clear();
-      if (side === 'secondary') {
-        secondarySelected = new Set();
-      } else {
-        primarySelected = new Set();
-      }
       await explorerState.refresh(activeTab.id, side);
     } catch (err) {
       alert(`Error renaming file: ${err}`);
@@ -202,14 +210,9 @@
 
     try {
       for (const path of selected) {
-        await api.deleteFile(path);
+        await explorerApi.deleteFile(path);
       }
       selected.clear();
-      if (side === 'secondary') {
-        secondarySelected = new Set();
-      } else {
-        primarySelected = new Set();
-      }
       await explorerState.refresh(activeTab.id, side);
     } catch (err) {
       alert(`Error deleting items: ${err}`);
@@ -246,9 +249,9 @@
         const dest = `${pane.currentPath}${separator}${leafName}`;
 
         if (isCutOperation) {
-          await api.moveFile(src, dest);
+          await explorerApi.moveFile(src, dest);
         } else {
-          await api.copyFile(src, dest);
+          await explorerApi.copyFile(src, dest);
         }
       }
 
@@ -418,34 +421,31 @@
               {#if activeTab.viewState.viewMode === 'list'}
                 <EntryList 
                   files={activeTab.files}
-                  selectedPaths={primarySelected}
                   onNavigate={(p) => handleNavigate('primary', p)}
                   onOpenFile={handleOpenFile}
-                  onToggleSelect={(p, m) => toggleSelection('primary', p, m)}
                   paneSide="primary"
                 />
               {:else}
                 <EntryGrid 
                   files={activeTab.files}
-                  selectedPaths={primarySelected}
                   onNavigate={(p) => handleNavigate('primary', p)}
                   onOpenFile={handleOpenFile}
-                  onToggleSelect={(p, m) => toggleSelection('primary', p, m)}
+                  paneSide="primary"
                 />
               {/if}
             </div>
           {/key}
-        </div>
 
-        <!-- Status footer -->
-        <div class="pane-footer">
-          <div class="footer-left">
-            <span>{activeTab.files.length} items</span>
-            {#if primarySelected.size > 0}
-              <span class="selection-count">| {primarySelected.size} items selected</span>
-            {/if}
+          <!-- Status footer -->
+          <div class="pane-footer">
+            <div class="footer-left">
+              <span>{activeTab.files.length} items</span>
+              {#if primarySelected.size > 0}
+                <span class="selection-count">| {primarySelected.size} items selected</span>
+              {/if}
+            </div>
+            <span class="footer-right">{formatBytes(currentPathTotalSize)}</span>
           </div>
-          <span class="footer-right">{formatBytes(currentPathTotalSize)}</span>
         </div>
       </div>
 
@@ -551,34 +551,31 @@
                 {#if activeTab.splitView.viewState.viewMode === 'list'}
                   <EntryList 
                     files={activeTab.splitView.files}
-                    selectedPaths={secondarySelected}
                     onNavigate={(p) => handleNavigate('secondary', p)}
                     onOpenFile={handleOpenFile}
-                    onToggleSelect={(p, m) => toggleSelection('secondary', p, m)}
                     paneSide="secondary"
                   />
                 {:else}
                   <EntryGrid 
                     files={activeTab.splitView.files}
-                    selectedPaths={secondarySelected}
                     onNavigate={(p) => handleNavigate('secondary', p)}
                     onOpenFile={handleOpenFile}
-                    onToggleSelect={(p, m) => toggleSelection('secondary', p, m)}
+                    paneSide="secondary"
                   />
                 {/if}
               </div>
             {/key}
-          </div>
 
-          <!-- Status footer -->
-          <div class="pane-footer">
-            <div class="footer-left">
-              <span>{activeTab.splitView.files.length} items</span>
-              {#if secondarySelected.size > 0}
-                <span class="selection-count">| {secondarySelected.size} items selected</span>
-              {/if}
+            <!-- Status footer -->
+            <div class="pane-footer">
+              <div class="footer-left">
+                <span>{activeTab.splitView.files.length} items</span>
+                {#if secondarySelected.size > 0}
+                  <span class="selection-count">| {secondarySelected.size} items selected</span>
+                {/if}
+              </div>
+              <span class="footer-right">{formatBytes(secondaryTotalSize)}</span>
             </div>
-            <span class="footer-right">{formatBytes(secondaryTotalSize)}</span>
           </div>
         </div>
       {/if}
@@ -611,7 +608,7 @@
     height: 100%;
     overflow: hidden;
     outline: none;
-    background-color: var(--bg-primary);
+    background-color: var(--bg-secondary);
     transition: box-shadow var(--transition-normal);
   }
 
@@ -756,21 +753,27 @@
     flex-grow: 1;
     overflow: hidden;
     position: relative;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    margin: 10px;
+    box-shadow: var(--shadow-md);
+    display: flex;
+    flex-direction: column;
   }
 
   .transition-wrapper {
     width: 100%;
-    height: 100%;
+    flex-grow: 1;
+    overflow: hidden;
   }
 
   .pane-footer {
-    height: 24px;
-    background-color: var(--bg-secondary);
-    border-top: 1px solid var(--border-color);
+    height: 28px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0 12px;
+    padding: 0 16px 8px 16px;
     font-size: 0.75rem;
     color: var(--text-muted);
     flex-shrink: 0;

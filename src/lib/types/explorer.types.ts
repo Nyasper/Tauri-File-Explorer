@@ -1,3 +1,5 @@
+import { type SvelteSet } from "svelte/reactivity";
+
 export interface FileEntry {
   name: string;
   path: string;
@@ -26,6 +28,7 @@ export interface Tab {
   historyIndex: number;
   viewState: ViewState;
   files: FileEntry[]; // Loaded file entries specific to this tab
+  selectedPaths: SvelteSet<string>; // Selection state specific to this tab/pane
   splitView: Tab | null; // Support side-by-side active paths within the same tab
 }
 
