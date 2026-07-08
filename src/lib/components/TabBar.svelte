@@ -27,9 +27,48 @@
     explorerState.closeTab(id);
   }
 
-  function handleDuplicateTab(e: MouseEvent, id: string) {
-    e.preventDefault();
-    explorerState.duplicateTab(id);
+  import { contextMenu, type ContextMenuItem } from '$lib/services/context-menu.service.svelte';
+
+  const iconNewTab = `<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>`;
+  const iconDuplicate = `<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`;
+  const iconClose = `<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`;
+
+  function handleTabContextMenu(e: MouseEvent, tabId: string) {
+    const items: ContextMenuItem[] = [
+      {
+        label: 'New Tab',
+        shortcut: 'Ctrl+T',
+        icon: iconNewTab,
+        action: () => explorerState.addTab(explorerState.activeTab?.currentPath || '/')
+      },
+      {
+        label: 'Duplicate Tab',
+        icon: iconDuplicate,
+        action: () => explorerState.duplicateTab(tabId)
+      },
+      { isSeparator: true },
+      {
+        label: 'Close Tab',
+        shortcut: 'Ctrl+W',
+        icon: iconClose,
+        disabled: explorerState.tabs.length <= 1,
+        action: () => explorerState.closeTab(tabId)
+      }
+    ];
+    contextMenu.show(e, 'tab', items);
+  }
+
+  function handleTabBarContextMenu(e: MouseEvent) {
+    if (e.target !== e.currentTarget) return;
+    const items: ContextMenuItem[] = [
+      {
+        label: 'New Tab',
+        shortcut: 'Ctrl+T',
+        icon: iconNewTab,
+        action: () => explorerState.addTab(explorerState.activeTab?.currentPath || '/')
+      }
+    ];
+    contextMenu.show(e, 'tab', items);
   }
 
   function handleConfig(e: MouseEvent) {
@@ -39,7 +78,7 @@
 </script>
 
 <div class="tab-bar">
-  <div class="tabs-container">
+  <div class="tabs-container" oncontextmenu={handleTabBarContextMenu}>
     {#each explorerState.tabs as tab (tab.id)}
       <div 
         class="tab-item" 
@@ -47,12 +86,12 @@
         transition:fade={{ duration: 150 }}
         animate:flip={{ duration: 150 }}
         onclick={() => handleTabClick(tab.id)}
-        oncontextmenu={(e) => handleDuplicateTab(e, tab.id)}
+        oncontextmenu={(e) => handleTabContextMenu(e, tab.id)}
         onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleTabClick(tab.id); }}
         tabindex="0"
         role="tab"
         aria-selected={explorerState.activeTabId === tab.id}
-        title="Right click to duplicate tab"
+        title="Right click for tab options"
       >
         <!-- Folder Icon inside tab -->
         <svg class="tab-icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">

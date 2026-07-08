@@ -56,6 +56,7 @@ export function useKeybindingService() {
       if (ctrlKey && e.key.toLowerCase() === "t") {
         console.debug("New Tab shortcut pressed");
         e.preventDefault();
+        e.stopPropagation();
         const currentPath = explorerState.activeTab?.currentPath || "/";
         explorerState.addTab(currentPath);
         return;
@@ -64,6 +65,7 @@ export function useKeybindingService() {
       // 2. Ctrl/Cmd + W -> Close Tab
       if (ctrlKey && e.key.toLowerCase() === "w") {
         e.preventDefault();
+        e.stopPropagation();
         console.debug("Close Tab shortcut pressed");
         explorerState.closeTab(explorerState.activeTabId);
         return;
@@ -72,6 +74,7 @@ export function useKeybindingService() {
       // 3. Ctrl + Tab / Ctrl + Shift + Tab -> Switch Tabs
       if (e.ctrlKey && e.key === "Tab") {
         e.preventDefault();
+        e.stopPropagation();
         console.debug("Switch Tab shortcut pressed");
         const tabs = explorerState.tabs;
         if (tabs.length <= 1) return;
@@ -104,6 +107,7 @@ export function useKeybindingService() {
         )
           return;
         e.preventDefault();
+        e.stopPropagation();
         explorerState.goBack(
           explorerState.activeTabId,
           explorerState.activePaneSide,
@@ -123,6 +127,7 @@ export function useKeybindingService() {
         )
           return;
         e.preventDefault();
+        e.stopPropagation();
         explorerState.goForward(
           explorerState.activeTabId,
           explorerState.activePaneSide,
@@ -133,6 +138,7 @@ export function useKeybindingService() {
       // 5. F1 -> Toggle Help Modal
       if (e.key === "F1") {
         e.preventDefault();
+        e.stopPropagation();
         console.debug("F1 Help shortcut pressed");
         explorerState.isHelpModalOpen = !explorerState.isHelpModalOpen;
         return;
@@ -143,6 +149,7 @@ export function useKeybindingService() {
         if (!explorerState.isHelpModalOpen && !explorerState.isConfigModalOpen)
           return;
         e.preventDefault();
+        e.stopPropagation();
         console.debug("Esc Help/Config shortcut pressed");
         explorerState.isHelpModalOpen = false;
         explorerState.isConfigModalOpen = false;
@@ -152,6 +159,7 @@ export function useKeybindingService() {
       // 7. Ctrl + o -> Toggle Settings Modal
       if (ctrlKey && e.key.toLowerCase() === "o") {
         e.preventDefault();
+        e.stopPropagation();
         console.debug("Ctrl + O shortcut pressed");
         explorerState.isConfigModalOpen = !explorerState.isConfigModalOpen;
         return;
@@ -162,6 +170,7 @@ export function useKeybindingService() {
       // e.button 3: Back button, 4: Forward button
       if (e.button === 3) {
         e.preventDefault();
+        e.stopPropagation();
         console.debug("Mouse button 3 pressed");
         explorerState.goBack(
           explorerState.activeTabId,
@@ -169,6 +178,7 @@ export function useKeybindingService() {
         );
       } else if (e.button === 4) {
         e.preventDefault();
+        e.stopPropagation();
         console.debug("Mouse button 4 pressed");
         explorerState.goForward(
           explorerState.activeTabId,
@@ -181,6 +191,7 @@ export function useKeybindingService() {
       // Prevent default browser back/forward behavior
       if (e.button === 3 || e.button === 4) {
         e.preventDefault();
+        e.stopPropagation();
       }
     };
 

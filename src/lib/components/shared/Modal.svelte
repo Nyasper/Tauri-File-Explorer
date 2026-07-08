@@ -30,10 +30,10 @@
 </script>
 
 {#if isOpen}
-  <!-- svelte-ignore a11y_click_events_have_key_events -->
-  <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div class="modal-overlay" onclick={handleClickOutside} transition:fade={{ duration: 220 }}>
-    <div class="modal-container">
+    <!-- svelte-ignore a11y_click_events_have_key_events -->
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div class="modal-container" onclick={(e) => e.stopPropagation()}>
       <div class="modal-header">
         <div class="modal-title">
           {#if icon}

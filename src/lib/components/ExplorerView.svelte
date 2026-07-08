@@ -302,17 +302,49 @@
     if (e.target instanceof HTMLInputElement) return; // Ignore inside input fields
 
     if (e.key === 'Delete') {
+      e.preventDefault();
+      e.stopPropagation();
       deleteSelected(side);
     } else if (e.ctrlKey && e.key === 'c') {
+      e.preventDefault();
+      e.stopPropagation();
       copySelected(side);
     } else if (e.ctrlKey && e.key === 'x') {
+      e.preventDefault();
+      e.stopPropagation();
       cutSelected(side);
     } else if (e.ctrlKey && e.key === 'v') {
+      e.preventDefault();
+      e.stopPropagation();
       pasteClipboard(side);
     } else if (e.key === 'F5') {
+      e.preventDefault();
+      e.stopPropagation();
       handleRefresh(side);
     }
   }
+
+  const primaryActions = {
+    rename: () => renameSelected('primary'),
+    delete: () => deleteSelected('primary'),
+    copy: () => copySelected('primary'),
+    cut: () => cutSelected('primary'),
+    paste: () => pasteClipboard('primary'),
+    createFolder: () => createFolder('primary'),
+    createFile: () => createNewFile('primary'),
+    refresh: () => handleRefresh('primary'),
+  };
+
+  const secondaryActions = {
+    rename: () => renameSelected('secondary'),
+    delete: () => deleteSelected('secondary'),
+    copy: () => copySelected('secondary'),
+    cut: () => cutSelected('secondary'),
+    paste: () => pasteClipboard('secondary'),
+    createFolder: () => createFolder('secondary'),
+    createFile: () => createNewFile('secondary'),
+    refresh: () => handleRefresh('secondary'),
+  };
 </script>
 
 {#if !activeTab}
@@ -416,14 +448,14 @@
 
         <!-- Directory content container -->
         <div class="pane-content-container">
-          {#key activeTab.currentPath + activeTab.viewState.viewMode}
-            <div class="transition-wrapper" in:fade={{ duration: 150 }}>
               {#if activeTab.viewState.viewMode === 'list'}
                 <EntryList 
                   files={activeTab.files}
                   onNavigate={(p) => handleNavigate('primary', p)}
                   onOpenFile={handleOpenFile}
                   paneSide="primary"
+                  actions={primaryActions}
+                  canPaste={clipboardPaths.length > 0}
                 />
               {:else}
                 <EntryGrid 
@@ -431,10 +463,10 @@
                   onNavigate={(p) => handleNavigate('primary', p)}
                   onOpenFile={handleOpenFile}
                   paneSide="primary"
+                  actions={primaryActions}
+                  canPaste={clipboardPaths.length > 0}
                 />
               {/if}
-            </div>
-          {/key}
 
           <!-- Status footer -->
           <div class="pane-footer">
@@ -546,14 +578,14 @@
 
           <!-- Directory content container -->
           <div class="pane-content-container">
-            {#key activeTab.splitView.currentPath + activeTab.splitView.viewState.viewMode}
-              <div class="transition-wrapper" in:fade={{ duration: 150 }}>
                 {#if activeTab.splitView.viewState.viewMode === 'list'}
                   <EntryList 
                     files={activeTab.splitView.files}
                     onNavigate={(p) => handleNavigate('secondary', p)}
                     onOpenFile={handleOpenFile}
                     paneSide="secondary"
+                    actions={secondaryActions}
+                    canPaste={clipboardPaths.length > 0}
                   />
                 {:else}
                   <EntryGrid 
@@ -561,10 +593,10 @@
                     onNavigate={(p) => handleNavigate('secondary', p)}
                     onOpenFile={handleOpenFile}
                     paneSide="secondary"
+                    actions={secondaryActions}
+                    canPaste={clipboardPaths.length > 0}
                   />
                 {/if}
-              </div>
-            {/key}
 
             <!-- Status footer -->
             <div class="pane-footer">
@@ -762,11 +794,6 @@
     flex-direction: column;
   }
 
-  .transition-wrapper {
-    width: 100%;
-    flex-grow: 1;
-    overflow: hidden;
-  }
 
   .pane-footer {
     height: 28px;
