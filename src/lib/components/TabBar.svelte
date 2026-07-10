@@ -1,6 +1,5 @@
 <script lang="ts">
   import { explorerState } from '../state/explorer.state.svelte';
-  import { configService } from '$lib/services/config.service.svelte';
   import HelpModal from './HelpModal.svelte';
   import ConfigModal from './ConfigModal.svelte';
   import { fade } from 'svelte/transition';
