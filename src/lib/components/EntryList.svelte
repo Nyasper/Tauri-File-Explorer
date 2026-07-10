@@ -300,7 +300,8 @@
 
   .entries-table {
     width: 100%;
-    border-collapse: collapse;
+    border-collapse: separate;
+    border-spacing: 0;
     text-align: left;
     font-size: 0.9rem;
   }
@@ -310,7 +311,6 @@
     top: 0;
     z-index: 10;
     background-color: var(--bg-secondary);
-    border-bottom: 1px solid var(--border-color);
   }
 
   th {
@@ -321,6 +321,7 @@
     font-size: 0.8rem;
     text-transform: uppercase;
     letter-spacing: 0.05em;
+    border-bottom: 1px solid var(--border-color);
   }
 
   .clickable {
@@ -366,24 +367,43 @@
   }
 
   .entry-row {
-    border-bottom: 1px solid var(--border-color);
     outline: none;
     transition: background-color var(--transition-fast);
   }
 
-  .entry-row:hover {
+  .entry-row:hover td {
     background-color: var(--bg-hover);
   }
 
-  .entry-row.selected {
+  .entry-row.selected td {
     background-color: var(--bg-active);
-    border-bottom-color: rgba(var(--accent-rgb), 0.3);
+    border-top: 1px solid var(--accent);
+    border-bottom: 1px solid var(--accent);
+  }
+
+  .entry-row.selected td:first-child {
+    border-left: 1px solid var(--accent);
+    border-top-left-radius: var(--radius-md);
+    border-bottom-left-radius: var(--radius-md);
+  }
+
+  .entry-row.selected td:last-child {
+    border-right: 1px solid var(--accent);
+    border-top-right-radius: var(--radius-md);
+    border-bottom-right-radius: var(--radius-md);
+  }
+
+  .entry-row.selected .file-icon.file {
+    color: var(--accent);
   }
 
   td {
     padding: 0.65rem 1rem;
     color: var(--text-primary);
     vertical-align: middle;
+    border-bottom: 1px solid var(--border-color);
+    border-top: 1px solid transparent;
+    transition: background-color var(--transition-fast), border-color var(--transition-fast);
   }
 
   .name-cell {
@@ -397,7 +417,7 @@
   }
 
   .file-icon.folder {
-    color: #eab308; /* yellow folder standard color */
+    color: var(--accent);
   }
 
   .file-icon.file {

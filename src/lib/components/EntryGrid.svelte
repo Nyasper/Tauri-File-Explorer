@@ -284,8 +284,13 @@
 
   .grid-item.selected {
     background-color: var(--bg-active);
-    border-color: rgba(var(--accent-rgb), 0.3);
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px var(--accent);
     transform: scale(0.98);
+  }
+
+  .grid-item.selected .icon-wrapper {
+    color: var(--accent) !important;
   }
 
   .icon-wrapper {
@@ -302,6 +307,7 @@
   .grid-icon {
     width: 100%;
     height: 100%;
+    fill: currentColor;
     transition: transform var(--transition-fast);
   }
 
@@ -310,7 +316,7 @@
   }
 
   /* File Type Palette definitions */
-  .folder { color: #eab308; }
+  .folder { color: var(--accent); }
   .image { color: #10b981; }
   .video { color: #8b5cf6; }
   .audio { color: #ec4899; }

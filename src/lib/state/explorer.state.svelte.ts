@@ -34,38 +34,45 @@ export class ExplorerState {
     // Watch for config initialization to apply the correct defaults to the initial tab
     $effect.root(() => {
       $effect(() => {
-        // if (configService.configInitialized) {
-        //   const firstTab = this.tabs[0];
-        //   if (
-        //     firstTab &&
-        //     firstTab.historyIndex === 0 &&
-        //     (firstTab.history[0] === "/" || firstTab.history[0] === "root")
-        //   ) {
-        //     // Apply loaded config settings
-        //     const configSortBy = configService.config.sort.by;
-        //     let sortBy: "name" | "size" | "modified" = "name";
-        //     if (configSortBy === "size") {
-        //       sortBy = "size";
-        //     } else if (configSortBy === "date") {
-        //       sortBy = "modified";
-        //     }
-        //     firstTab.viewState.sortBy = sortBy;
-        //     firstTab.viewState.sortOrder = configService.config.sort.order;
-        //     const resolvedDefaultPath =
-        //       configService.config.defaultPath === "root"
-        //         ? "/"
-        //         : configService.config.defaultPath;
-        //     this.defaultPath = resolvedDefaultPath;
-        //     firstTab.currentPath = resolvedDefaultPath;
-        //     firstTab.history = [resolvedDefaultPath];
-        //     // Reload the directory with the new sorting and path applied
-        //     this.loadDirectoryForTab(
-        //       firstTab.id,
-        //       "primary",
-        //       resolvedDefaultPath,
-        //     );
-        //   }
-        // }
+        if (configService.configInitialized) {
+          const resolvedDefaultPath =
+            configService.config.defaultPath === "root"
+              ? "/"
+              : configService.config.defaultPath;
+          this.defaultPath = resolvedDefaultPath;
+
+          const firstTab = this.tabs[0];
+          if (firstTab && firstTab.historyIndex === 0) {
+            // Apply loaded config defaultViewMode
+            firstTab.viewState.viewMode = configService.config.defaultViewMode;
+
+            // Apply loaded config sorting settings
+            const configSortBy = configService.config.sort.by;
+            let sortBy: "name" | "size" | "modified" = "name";
+            if (configSortBy === "size") {
+              sortBy = "size";
+            } else if (configSortBy === "date") {
+              sortBy = "modified";
+            }
+            firstTab.viewState.sortBy = sortBy;
+            firstTab.viewState.sortOrder = configService.config.sort.order;
+
+            // Apply default path if the tab hasn't navigated away from startup default
+            if (
+              (firstTab.history[0] === "/" || firstTab.history[0] === "root") &&
+              resolvedDefaultPath !== firstTab.history[0]
+            ) {
+              firstTab.currentPath = resolvedDefaultPath;
+              firstTab.history = [resolvedDefaultPath];
+              // Reload the directory with the new sorting and path applied
+              this.loadDirectoryForTab(
+                firstTab.id,
+                "primary",
+                resolvedDefaultPath,
+              );
+            }
+          }
+        }
       });
     });
   }

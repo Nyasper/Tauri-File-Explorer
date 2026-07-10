@@ -4,7 +4,6 @@ export type SortOrder = "asc" | "desc";
 export type SortBy = "name" | "size" | "type" | "date";
 export type Theme = "system" | "light" | "dark";
 export type OpenMode = "singleClick" | "doubleClick";
-export type IconSize = "small" | "medium" | "large";
 export type Lang = "en" | "es";
 export type AccentColor =
   | "#eab308"
@@ -34,7 +33,6 @@ export interface ApplicationConfig {
   showSidebar: boolean;
   // calculateFolderSizes: boolean;
   // showBreadcrumbs: boolean;
-  iconSize: IconSize;
   language: Lang;
   defaultAccentColor: AccentColor;
 }

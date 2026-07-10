@@ -20,7 +20,6 @@ export class ConfigService {
     confirmDelete: true,
     openMode: "doubleClick",
     showSidebar: true,
-    iconSize: "medium",
     language: "en",
     defaultAccentColor: "#3b82f6",
   });

@@ -1,7 +1,7 @@
 <script lang="ts">
   import Modal from './shared/Modal.svelte';
   import { configService } from '$lib/services/config.service.svelte';
-  import type { Theme, ViewMode, StartupMode, OpenMode, IconSize, Lang, AccentColor } from '$lib/types/application.config.types';
+  import type { Theme, ViewMode, StartupMode, OpenMode, Lang, AccentColor } from '$lib/types/application.config.types';
   import { fade, crossfade } from 'svelte/transition';
   import { cubicInOut } from 'svelte/easing';
 
@@ -225,34 +225,7 @@
             </div>
           </div>
 
-          <div class="setting-item">
-            <div class="setting-info">
-              <span class="setting-label">Icon Size</span>
-              <span class="setting-desc">Scale of files and folders in grid view.</span>
-            </div>
-            <div class="option-switcher">
-              {#each [
-                { value: 'small', label: 'Small' },
-                { value: 'medium', label: 'Medium' },
-                { value: 'large', label: 'Large' }
-              ] as opt}
-                <button 
-                  class="switcher-btn" 
-                  class:active={configService.config.iconSize === opt.value} 
-                  onclick={() => configService.config.iconSize = opt.value as IconSize}
-                >
-                  {#if configService.config.iconSize === opt.value}
-                    <div 
-                      class="active-indicator" 
-                      in:receive={{ key: 'iconSize' }}
-                      out:send={{ key: 'iconSize' }}
-                    ></div>
-                  {/if}
-                  <span class="btn-label">{opt.label}</span>
-                </button>
-              {/each}
-            </div>
-          </div>
+
 
           <div class="setting-item">
             <div class="setting-info">
@@ -401,8 +374,9 @@
   }
 
   .nav-tab.active {
-    color: var(--text-primary);
+    color: var(--accent);
     background-color: var(--bg-active);
+    border-left: 3px solid var(--accent);
     font-weight: 600;
   }
 
