@@ -15,6 +15,11 @@ pub fn run() {
             explorer_commands::move_file,
             explorer_commands::open_file,
             explorer_commands::search_index,
+            explorer_commands::get_system_paths,
+            explorer_commands::list_sidebar_folders,
+            explorer_commands::get_system_drives,
+            explorer_commands::get_recycle_bin_path,
+            explorer_commands::empty_recycle_bin,
             utils::sleep,
         ])
         .run(tauri::generate_context!())

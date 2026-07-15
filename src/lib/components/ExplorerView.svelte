@@ -7,6 +7,8 @@
   import { formatBytes } from '$lib/utils/formater';
   import { fade } from 'svelte/transition';
   import { SvelteSet } from 'svelte/reactivity';
+  import Sidebar from './Sidebar.svelte';
+  import { configService } from '../services/config.service.svelte';
 
 
 
@@ -45,8 +47,8 @@
   });
 
   // Clipboard for copy-paste operations
-  let clipboardPaths = $state<string[]>([]);
-  let isCutOperation = $state(false);
+  const clipboardPaths = $derived(explorerState.clipboardPaths);
+  const isCutOperation = $derived(explorerState.isCutOperation);
 
   // Search input values per pane
   let primarySearchVal = $state('');
@@ -224,8 +226,8 @@
     const { selected } = getPaneDetails(side);
     if (selected.size === 0) return;
     
-    clipboardPaths = Array.from(selected);
-    isCutOperation = false;
+    explorerState.clipboardPaths = Array.from(selected);
+    explorerState.isCutOperation = false;
   }
 
   // Clipboard operations: Cut
@@ -233,8 +235,8 @@
     const { selected } = getPaneDetails(side);
     if (selected.size === 0) return;
 
-    clipboardPaths = Array.from(selected);
-    isCutOperation = true;
+    explorerState.clipboardPaths = Array.from(selected);
+    explorerState.isCutOperation = true;
   }
 
   // Clipboard operations: Paste
@@ -255,10 +257,10 @@
         }
       }
 
-      if (isCutOperation) {
+      if (explorerState.isCutOperation) {
         // Clear clipboard after cut & paste completes
-        clipboardPaths = [];
-        isCutOperation = false;
+        explorerState.clipboardPaths = [];
+        explorerState.isCutOperation = false;
       }
 
       await explorerState.refresh(activeTab.id, side);
@@ -305,6 +307,10 @@
       e.preventDefault();
       e.stopPropagation();
       deleteSelected(side);
+    } else if (e.key === 'F2') {
+      e.preventDefault();
+      e.stopPropagation();
+      renameSelected(side);
     } else if (e.ctrlKey && e.key === 'c') {
       e.preventDefault();
       e.stopPropagation();
@@ -351,10 +357,16 @@
   <div class="no-tab">No tab is active. Click "+" to create one.</div>
 {:else}
   <div class="explorer-view-wrapper">
-    <!-- Render primary and secondary split screens side-by-side -->
-    <div class="split-panes-container">
+    <div class="explorer-main-layout">
+      {#if configService.config.showSidebar}
+        <Sidebar />
+      {/if}
+      <!-- Render primary and secondary split screens side-by-side -->
+      <div class="split-panes-container">
       
       <!-- Primary Pane -->
+      <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+      <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
       <div 
         class="pane-pane primary-pane" 
         class:focused={explorerState.activePaneSide === 'primary' && splitActive}
@@ -484,6 +496,8 @@
       <!-- Secondary Split Pane -->
       {#if activeTab.splitView}
         <div class="split-divider" transition:fade={{ duration: 150 }}></div>
+        <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+        <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
         <div 
           class="pane-pane secondary-pane" 
           class:focused={explorerState.activePaneSide === 'secondary'}
@@ -612,6 +626,7 @@
         </div>
       {/if}
 
+      </div>
     </div>
   </div>
 {/if}
@@ -621,14 +636,24 @@
     display: flex;
     flex-direction: column;
     flex-grow: 1;
+    min-height: 0;
     overflow: hidden;
     background-color: var(--bg-primary);
+  }
+
+  .explorer-main-layout {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
   }
 
   .split-panes-container {
     display: flex;
     flex-direction: row;
-    width: 100%;
+    flex-grow: 1;
     height: 100%;
     overflow: hidden;
   }

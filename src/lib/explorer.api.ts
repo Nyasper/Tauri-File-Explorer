@@ -1,5 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import type { FileEntry } from "./types/explorer.types";
+import type { SidebarFolder, SystemPathEntry, DriveEntry } from "./types/sidebar.types";
+
 
 /**
  * Lists the contents of the directory at the specified path.
@@ -71,3 +73,39 @@ export async function searchIndex(
 export async function sleep(ms: number): Promise<void> {
   return invoke<void>("sleep", { ms });
 }
+
+/**
+ * Gets the list of common system paths (Desktop, Documents, Downloads, etc.).
+ */
+export async function getSystemPaths(): Promise<SystemPathEntry[]> {
+  return invoke<SystemPathEntry[]>("get_system_paths");
+}
+
+/**
+ * Lists subdirectories of the specified directory.
+ */
+export async function listSidebarFolders(path: string): Promise<SidebarFolder[]> {
+  return invoke<SidebarFolder[]>("list_sidebar_folders", { path });
+}
+
+/**
+ * Gets the list of available system disk drives.
+ */
+export async function getSystemDrives(): Promise<DriveEntry[]> {
+  return invoke<DriveEntry[]>("get_system_drives");
+}
+
+/**
+ * Gets the native Recycle Bin / Trash path for in-app navigation.
+ */
+export async function getRecycleBinPath(): Promise<string> {
+  return invoke<string>("get_recycle_bin_path");
+}
+
+/**
+ * Empties the Recycle Bin / Trash.
+ */
+export async function emptyRecycleBin(): Promise<void> {
+  return invoke<void>("empty_recycle_bin");
+}
+

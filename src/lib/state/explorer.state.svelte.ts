@@ -8,6 +8,8 @@ export class ExplorerState {
   // Runes for reactive states
   tabs: Tab[] = $state([]);
   activeTabId = $state("");
+  clipboardPaths = $state<string[]>([]);
+  isCutOperation = $state(false);
   activePaneSide: "primary" | "secondary" = $state("primary"); // Tracks active pane in split-view
   isHelpModalOpen = $state(false);
   isConfigModalOpen = $state(false);
@@ -79,6 +81,15 @@ export class ExplorerState {
 
   get activeTab(): Tab {
     return this.#activeTab;
+  }
+
+  get activePanePath(): string {
+    const tab = this.activeTab;
+    if (!tab) return "";
+    if (tab.splitView && this.activePaneSide === "secondary") {
+      return tab.splitView.currentPath;
+    }
+    return tab.currentPath;
   }
 
   // Helper to get active pane (primary tab or secondary split-pane)
@@ -330,6 +341,13 @@ export class ExplorerState {
       if (pane.currentPath === path) {
         pane.files = freshEntries;
       }
+
+      // Update the sidebar tree dynamically to reflect changes in background
+      import("./sidebar.state.svelte").then(({ sidebarState }) => {
+        sidebarState.refreshPath(path);
+      }).catch(err => {
+        console.error("Failed to dynamically import sidebarState:", err);
+      });
     } catch (err) {
       console.error(`Failed to load directory: ${path}`, err);
       // Keep cached files if load fails, or clear if cache didn't exist

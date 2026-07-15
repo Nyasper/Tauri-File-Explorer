@@ -4,6 +4,23 @@ use std::fs;
 use std::path::Path;
 use std::sync::{Mutex, OnceLock};
 use tauri_plugin_opener::OpenerExt;
+use tauri::Manager;
+
+#[cfg(windows)]
+extern "system" {
+    fn SHEmptyRecycleBinW(
+        hwnd: isize,
+        pszRootPath: *const u16,
+        dwFlags: u32,
+    ) -> i32;
+}
+
+#[cfg(windows)]
+const SHERB_NOCONFIRMATION: u32 = 0x00000001;
+#[cfg(windows)]
+const SHERB_NOPROGRESSUI: u32 = 0x00000002;
+#[cfg(windows)]
+const SHERB_NOSOUND: u32 = 0x00000004;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct FileEntry {
@@ -488,6 +505,238 @@ async fn search_dir_recursive(root: std::path::PathBuf, query_lower: String) -> 
     }
 
     results
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct SidebarFolder {
+    pub name: String,
+    pub path: String,
+    pub has_subfolders: bool,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct SystemPathEntry {
+    pub name: String,
+    pub path: String,
+    pub has_subfolders: bool,
+}
+
+fn has_elements_helper(path: &std::path::Path) -> bool {
+    if let Ok(entries) = std::fs::read_dir(path) {
+        for entry in entries {
+            if let Ok(entry) = entry {
+                let name = entry.file_name().to_string_lossy().to_string();
+                if name.starts_with('.') {
+                    continue; // Ignore hidden files/folders starting with dot
+                }
+                #[cfg(windows)]
+                {
+                    use std::os::windows::fs::MetadataExt;
+                    if let Ok(metadata) = entry.metadata() {
+                        if (metadata.file_attributes() & 0x2) != 0 { // FILE_ATTRIBUTE_HIDDEN
+                            continue;
+                        }
+                    }
+                }
+                return true; // Found a non-hidden item!
+            }
+        }
+    }
+    false
+}
+
+#[tauri::command]
+pub fn get_system_paths(app: tauri::AppHandle) -> Result<Vec<SystemPathEntry>, String> {
+    let path_resolver = app.path();
+    let mut paths = Vec::new();
+
+    let dirs = [
+        ("Home", path_resolver.home_dir()),
+        ("Desktop", path_resolver.desktop_dir()),
+        ("Documents", path_resolver.document_dir()),
+        ("Downloads", path_resolver.download_dir()),
+        ("Images", path_resolver.picture_dir()),
+        ("Videos", path_resolver.video_dir()),
+        ("Music", path_resolver.audio_dir()),
+    ];
+
+    for (name, dir_result) in dirs {
+        if let Ok(dir_path) = dir_result {
+            let path_str = dir_path.to_string_lossy().to_string();
+            let has_subfolders = has_elements_helper(&dir_path);
+            paths.push(SystemPathEntry {
+                name: name.to_string(),
+                path: path_str,
+                has_subfolders,
+            });
+        }
+    }
+
+    Ok(paths)
+}
+
+#[tauri::command]
+pub fn list_sidebar_folders(path: String) -> Result<Vec<SidebarFolder>, String> {
+    let root = Path::new(&path);
+    if !root.exists() {
+        return Err(format!("The path does not exist: {}", path));
+    }
+    if !root.is_dir() {
+        return Err(format!("The path is not a directory: {}", path));
+    }
+
+    let entries = fs::read_dir(root).map_err(|e| format!("Failed to read directory: {}", e))?;
+    let mut folders = Vec::new();
+
+    for entry in entries {
+        if let Ok(entry) = entry {
+            if let Ok(metadata) = entry.metadata() {
+                if metadata.is_dir() {
+                    let path_str = entry.path().to_string_lossy().to_string();
+                    let name = entry.file_name().to_string_lossy().to_string();
+                    let has_sub = has_elements_helper(&entry.path());
+                    
+                    folders.push(SidebarFolder {
+                        name,
+                        path: path_str,
+                        has_subfolders: has_sub,
+                    });
+                }
+            }
+        }
+    }
+
+    // Sort alphabetically (case-insensitive)
+    folders.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+
+    Ok(folders)
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct DriveEntry {
+    pub name: String,
+    pub path: String,
+    pub has_subfolders: bool,
+}
+
+#[tauri::command]
+pub fn get_system_drives() -> Result<Vec<DriveEntry>, String> {
+    let mut drives = Vec::new();
+    #[cfg(windows)]
+    {
+        for c in b'A'..=b'Z' {
+            let drive_path = format!("{}:\\", c as char);
+            let path = std::path::Path::new(&drive_path);
+            if path.exists() {
+                let name = format!("Disk ({}:)", c as char);
+                let has_subfolders = has_elements_helper(path);
+                drives.push(DriveEntry {
+                    name,
+                    path: drive_path,
+                    has_subfolders,
+                });
+            }
+        }
+    }
+    #[cfg(not(windows))]
+    {
+        let drive_path = "/".to_string();
+        let path = std::path::Path::new(&drive_path);
+        let has_subfolders = has_elements_helper(path);
+        drives.push(DriveEntry {
+            name: "Root (/)".to_string(),
+            path: drive_path,
+            has_subfolders,
+        });
+    }
+    Ok(drives)
+}
+
+#[tauri::command]
+pub fn get_recycle_bin_path() -> Result<String, String> {
+    #[cfg(target_os = "windows")]
+    {
+        // The Windows Recycle Bin virtual folder path
+        let recycle_path = "C:\\$Recycle.Bin";
+        let path = std::path::Path::new(recycle_path);
+        if path.exists() {
+            return Ok(recycle_path.to_string());
+        }
+        // Fallback: try the user's recycle bin
+        if let Ok(user_profile) = std::env::var("USERPROFILE") {
+            return Ok(user_profile);
+        }
+        Err("Could not find Recycle Bin path".to_string())
+    }
+    #[cfg(target_os = "macos")]
+    {
+        if let Ok(home) = std::env::var("HOME") {
+            let trash_path = format!("{}/.Trash", home);
+            return Ok(trash_path);
+        }
+        Err("Could not find Trash path".to_string())
+    }
+    #[cfg(target_os = "linux")]
+    {
+        if let Ok(home) = std::env::var("HOME") {
+            // Standard freedesktop trash location
+            let trash_path = format!("{}/.local/share/Trash/files", home);
+            let path = std::path::Path::new(&trash_path);
+            if path.exists() {
+                return Ok(trash_path);
+            }
+            // Fallback
+            let trash_path2 = format!("{}/.Trash", home);
+            return Ok(trash_path2);
+        }
+        Err("Could not find Trash path".to_string())
+    }
+}
+
+#[tauri::command]
+pub fn empty_recycle_bin() -> Result<(), String> {
+    #[cfg(windows)]
+    {
+        let result = unsafe {
+            SHEmptyRecycleBinW(
+                0,
+                std::ptr::null(),
+                SHERB_NOCONFIRMATION | SHERB_NOPROGRESSUI | SHERB_NOSOUND,
+            )
+        };
+        if result != 0 {
+            return Err(format!("Failed to empty Recycle Bin (error code: {})", result));
+        }
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        if let Ok(home) = std::env::var("HOME") {
+            let trash_path = format!("{}/.Trash", home);
+            if std::path::Path::new(&trash_path).exists() {
+                std::fs::remove_dir_all(&trash_path)
+                    .map_err(|e| format!("Failed to empty Trash: {}", e))?;
+                std::fs::create_dir(&trash_path).unwrap_or(());
+            }
+        }
+    }
+
+    #[cfg(all(unix, not(target_os = "macos")))]
+    {
+        if let Ok(home) = std::env::var("HOME") {
+            for sub in &["files", "info", "expunged"] {
+                let trash_path = format!("{}/.local/share/Trash/{}", home, sub);
+                let p = std::path::Path::new(&trash_path);
+                if p.exists() {
+                    std::fs::remove_dir_all(p)
+                        .map_err(|e| format!("Failed to empty Trash: {}", e))?;
+                    std::fs::create_dir(p).unwrap_or(());
+                }
+            }
+        }
+    }
+
+    Ok(())
 }
 
 

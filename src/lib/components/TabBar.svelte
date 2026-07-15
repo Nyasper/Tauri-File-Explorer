@@ -4,6 +4,7 @@
   import ConfigModal from './ConfigModal.svelte';
   import { fade } from 'svelte/transition';
   import { flip } from 'svelte/animate';
+  import { configService } from '../services/config.service.svelte';
 
   // Helper to extract leaf folder name from path for tab title
   function getTabTitle(path: string): string {
@@ -77,7 +78,7 @@
 </script>
 
 <div class="tab-bar">
-  <div class="tabs-container" oncontextmenu={handleTabBarContextMenu}>
+  <div class="tabs-container" oncontextmenu={handleTabBarContextMenu} role="tablist" aria-label="Tabs" tabindex="-1">
     {#each explorerState.tabs as tab (tab.id)}
       <div 
         class="tab-item" 
@@ -136,6 +137,20 @@
     <!-- Settings Modal -->
     <ConfigModal bind:isModalOpen={explorerState.isConfigModalOpen} />
     
+    <!-- Toggle Sidebar Button -->
+    <button 
+      class="tab-action-btn sidebar-toggle-btn" 
+      class:active={configService.config.showSidebar}
+      title="Toggle Sidebar (Ctrl+B)"
+      aria-label="Toggle Sidebar"
+      onclick={() => configService.config.showSidebar = !configService.config.showSidebar}
+    >
+      <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+        <line x1="9" y1="3" x2="9" y2="21"></line>
+      </svg>
+    </button>
+
     <button 
       class="tab-action-btn help-btn" 
       title="Help"
@@ -167,6 +182,7 @@
 <style>
   .tab-bar {
     height: var(--tabbar-height);
+    flex-shrink: 0;
     background-color: var(--bg-secondary);
     border-bottom: 1px solid var(--border-color);
     display: flex;
@@ -312,5 +328,10 @@
 
   .settings-btn:hover {
     transform: rotate(30deg);
+  }
+
+  .sidebar-toggle-btn.active {
+    color: var(--accent);
+    background-color: rgba(var(--accent-rgb), 0.1);
   }
 </style>

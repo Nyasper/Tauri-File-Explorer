@@ -192,6 +192,8 @@
   }
 </script>
 
+<!-- svelte-ignore a11y_click_events_have_key_events -->
+<!-- svelte-ignore a11y_no_static_element_interactions -->
 <div class="grid-container" onclick={handleBackgroundClick} oncontextmenu={handleBackgroundContextMenu}>
   {#if files.length === 0}
     <div class="empty-state">This folder is empty.</div>
@@ -352,6 +354,7 @@
     word-break: break-all;
     display: -webkit-box;
     -webkit-line-clamp: 2;
+    line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
     line-height: 1.25;

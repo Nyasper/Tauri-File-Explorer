@@ -1,4 +1,5 @@
 import { explorerState } from "../state/explorer.state.svelte";
+import { configService } from "./config.service.svelte";
 
 interface ShortcutItem {
   key: string;
@@ -9,6 +10,11 @@ interface ShortcutItem {
 export const globalShorcutsList: ShortcutItem[] = [
   { key: "Esc", action: "Close Modal Window", category: "System" },
   { key: "F1", action: "Toggle Help Modal Window", category: "System" },
+  {
+    key: "Ctrl + B",
+    action: "Toggle Sidebar View",
+    category: "System",
+  },
   {
     key: "Ctrl + O",
     action: "Toggle Settings Modal Window",
@@ -162,6 +168,15 @@ export function useKeybindingService() {
         e.stopPropagation();
         console.debug("Ctrl + O shortcut pressed");
         explorerState.isConfigModalOpen = !explorerState.isConfigModalOpen;
+        return;
+      }
+
+      // 8. Ctrl + B -> Toggle Sidebar
+      if (ctrlKey && e.key.toLowerCase() === "b") {
+        e.preventDefault();
+        e.stopPropagation();
+        console.debug("Ctrl + B shortcut pressed");
+        configService.config.showSidebar = !configService.config.showSidebar;
         return;
       }
     };
