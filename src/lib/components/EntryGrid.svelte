@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { convertFileSrc } from '@tauri-apps/api/core';
   import type { FileEntry } from '../types/explorer.types';
   import { explorerState } from '../state/explorer.state.svelte';
   import { contextMenu, type ContextMenuItem } from '$lib/services/context-menu.service.svelte';
@@ -221,7 +222,7 @@
                 <path d="M20 6h-8l-2-2H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2z"/>
               </svg>
             {:else}
-              <!-- Document Base SVG -->
+              <!-- Document Base SVG (fallback behind thumbnail) -->
               <svg viewBox="0 0 24 24" class="grid-icon">
                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
                 {#if category === 'code'}
@@ -233,7 +234,9 @@
               </svg>
             {/if}
 
-            {#if category !== 'folder' && category !== 'code'}
+            {#if category === 'image'}
+              <img class="grid-thumb" src={convertFileSrc(entry.path)} alt={entry.name} onerror={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
+            {:else if category !== 'folder' && category !== 'code'}
               <!-- Smaller overlay icon/letter for recognition -->
               <span class="ext-badge">{entry.extension || 'file'}</span>
             {/if}
@@ -315,6 +318,16 @@
 
   .grid-item:hover .grid-icon {
     transform: scale(1.08);
+  }
+
+  .grid-thumb {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: var(--radius-sm);
+    z-index: 1;
   }
 
   /* File Type Palette definitions */

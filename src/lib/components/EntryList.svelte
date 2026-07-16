@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { convertFileSrc } from '@tauri-apps/api/core';
   import type { FileEntry } from '../types/explorer.types';
   import { explorerState } from '../state/explorer.state.svelte';
   import { contextMenu, type ContextMenuItem } from '$lib/services/context-menu.service.svelte';
@@ -166,6 +167,11 @@
     });
   }
 
+  function isImageFile(entry: FileEntry): boolean {
+    const imageExtensions = ['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp', 'bmp', 'ico'];
+    return imageExtensions.includes((entry.extension || '').toLowerCase());
+  }
+
   // Double click handler
   function handleDoubleClick(entry: FileEntry) {
     if (entry.is_dir) {
@@ -259,11 +265,16 @@
                     <path d="M20 6h-8l-2-2H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2z"/>
                   </svg>
                 {:else}
-                  <!-- File Icon (generic) -->
-                  <svg class="file-icon file" viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
-                    <polyline points="13 2 13 9 20 9"></polyline>
-                  </svg>
+                  <div class="file-icon-cell">
+                    <!-- File Icon (generic, fallback behind thumbnail) -->
+                    <svg class="file-icon file" viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
+                      <polyline points="13 2 13 9 20 9"></polyline>
+                    </svg>
+                    {#if isImageFile(entry)}
+                      <img class="file-thumb" src={convertFileSrc(entry.path)} alt="" onerror={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
+                    {/if}
+                  </div>
                 {/if}
                 <span class="entry-name" title={entry.name}>{entry.name}</span>
               </div>
@@ -424,6 +435,24 @@
 
   .file-icon.file {
     color: var(--text-secondary);
+  }
+
+  .file-icon-cell {
+    position: relative;
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+  }
+
+  .file-thumb {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 2px;
+    z-index: 1;
+    background: var(--bg-primary);
   }
 
   .entry-name {
