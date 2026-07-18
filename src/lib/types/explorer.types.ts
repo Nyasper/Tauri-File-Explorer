@@ -15,7 +15,7 @@ export interface FileEntry {
 export interface ViewState {
   viewMode: "list" | "grid";
   searchQuery: string;
-  sortBy: "name" | "size" | "modified";
+  sortBy: "name" | "size" | "modified" | "type";
   sortOrder: "asc" | "desc";
 }
 

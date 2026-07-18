@@ -71,13 +71,7 @@ export class ExplorerState {
           const startupPath = await this.resolveStartupPath();
           this.defaultPath = startupPath;
 
-          const configSortBy = configService.config.sort.by;
-          let sortBy: "name" | "size" | "modified" = "name";
-          if (configSortBy === "size") {
-            sortBy = "size";
-          } else if (configSortBy === "date") {
-            sortBy = "modified";
-          }
+          const sortBy = this.mapConfigSortBy();
 
           // Apply loaded defaults to every tab that hasn't been navigated yet
           // (historyIndex === 0 means the user never moved off the initial path).
@@ -122,7 +116,39 @@ export class ExplorerState {
           }
         });
       });
+
+      // Apply sort config changes in real time to every open pane.
+      let skipSortInitialRun = true;
+      $effect(() => {
+        configService.config.sort.by;
+        configService.config.sort.order;
+        if (skipSortInitialRun) {
+          skipSortInitialRun = false;
+          return;
+        }
+        untrack(() => {
+          const sortBy = this.mapConfigSortBy();
+          for (const tab of this.tabs) {
+            for (const pane of [tab, tab.splitView]) {
+              if (!pane) continue;
+              pane.viewState.sortBy = sortBy;
+              pane.viewState.sortOrder = configService.config.sort.order;
+              this.applyLocalSort(pane);
+            }
+          }
+        });
+      });
     });
+  }
+
+  // Map the config sort criteria to the pane ViewState one
+  // ("date" is called "modified" in the pane state).
+  private mapConfigSortBy(): ViewState["sortBy"] {
+    const configSortBy = configService.config.sort.by;
+    if (configSortBy === "size") return "size";
+    if (configSortBy === "date") return "modified";
+    if (configSortBy === "type") return "type";
+    return "name";
   }
 
   // Filter out hidden entries when the user disabled them in settings.
@@ -163,14 +189,6 @@ export class ExplorerState {
 
   // Add a new tab
   addTab(path: string = "/") {
-    const configSortBy = configService.config.sort.by;
-    let sortBy: "name" | "size" | "modified" = "name";
-    if (configSortBy === "size") {
-      sortBy = "size";
-    } else if (configSortBy === "date") {
-      sortBy = "modified";
-    }
-
     const newTab: Tab = {
       id: crypto.randomUUID(),
       currentPath: path,
@@ -179,7 +197,7 @@ export class ExplorerState {
       viewState: {
         viewMode: configService.config.defaultViewMode,
         searchQuery: "",
-        sortBy,
+        sortBy: this.mapConfigSortBy(),
         sortOrder: configService.config.sort.order,
       },
       files: [],
@@ -455,7 +473,7 @@ export class ExplorerState {
   sortPane(
     tabId: string,
     side: "primary" | "secondary",
-    sortBy: "name" | "size" | "modified",
+    sortBy: "name" | "size" | "modified" | "type",
   ) {
     const tab = this.tabs.find((t) => t.id === tabId);
     if (!tab) return;
@@ -494,6 +512,12 @@ export class ExplorerState {
         comparison = a.size - b.size;
       } else if (sortBy === "modified") {
         comparison = a.modified - b.modified;
+      } else if (sortBy === "type") {
+        comparison = (a.extension || "").localeCompare(
+          b.extension || "",
+          undefined,
+          { sensitivity: "base" },
+        );
       }
 
       return sortOrder === "asc" ? comparison : -comparison;

@@ -1,7 +1,7 @@
 <script lang="ts">
   import Modal from './shared/Modal.svelte';
   import { configService } from '$lib/services/config.service.svelte';
-  import type { Theme, ViewMode, StartupMode, OpenMode, AccentColor } from '$lib/types/application.config.types';
+  import type { Theme, ViewMode, StartupMode, OpenMode, AccentColor, SortBy, SortOrder } from '$lib/types/application.config.types';
   import { fade, crossfade } from 'svelte/transition';
   import { cubicInOut } from 'svelte/easing';
 
@@ -245,6 +245,64 @@
                       class="active-indicator" 
                       in:receive={{ key: 'openMode' }}
                       out:send={{ key: 'openMode' }}
+                    ></div>
+                  {/if}
+                  <span class="btn-label">{opt.label}</span>
+                </button>
+              {/each}
+            </div>
+          </div>
+
+          <div class="setting-item">
+            <div class="setting-info">
+              <span class="setting-label">Default Sort By</span>
+              <span class="setting-desc">Criteria used to order files and folders.</span>
+            </div>
+            <div class="option-switcher">
+              {#each [
+                { value: 'name', label: 'Name' },
+                { value: 'size', label: 'Size' },
+                { value: 'type', label: 'Type' },
+                { value: 'date', label: 'Date' }
+              ] as opt}
+                <button 
+                  class="switcher-btn" 
+                  class:active={configService.config.sort.by === opt.value} 
+                  onclick={() => configService.config.sort.by = opt.value as SortBy}
+                >
+                  {#if configService.config.sort.by === opt.value}
+                    <div 
+                      class="active-indicator" 
+                      in:receive={{ key: 'sortBy' }}
+                      out:send={{ key: 'sortBy' }}
+                    ></div>
+                  {/if}
+                  <span class="btn-label">{opt.label}</span>
+                </button>
+              {/each}
+            </div>
+          </div>
+
+          <div class="setting-item">
+            <div class="setting-info">
+              <span class="setting-label">Default Sort Order</span>
+              <span class="setting-desc">Direction of the sort criteria.</span>
+            </div>
+            <div class="option-switcher">
+              {#each [
+                { value: 'asc', label: 'Ascending' },
+                { value: 'desc', label: 'Descending' }
+              ] as opt}
+                <button 
+                  class="switcher-btn" 
+                  class:active={configService.config.sort.order === opt.value} 
+                  onclick={() => configService.config.sort.order = opt.value as SortOrder}
+                >
+                  {#if configService.config.sort.order === opt.value}
+                    <div 
+                      class="active-indicator" 
+                      in:receive={{ key: 'sortOrder' }}
+                      out:send={{ key: 'sortOrder' }}
                     ></div>
                   {/if}
                   <span class="btn-label">{opt.label}</span>
