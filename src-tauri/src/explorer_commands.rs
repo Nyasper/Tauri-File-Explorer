@@ -572,6 +572,14 @@ fn has_subfolders_helper(path: &std::path::Path) -> bool {
 }
 
 #[tauri::command]
+pub fn get_home_dir(app: tauri::AppHandle) -> Result<String, String> {
+    app.path()
+        .home_dir()
+        .map(|p| p.to_string_lossy().to_string())
+        .map_err(|e| format!("Failed to resolve home directory: {}", e))
+}
+
+#[tauri::command]
 pub fn get_system_paths(app: tauri::AppHandle) -> Result<Vec<SystemPathEntry>, String> {
     let path_resolver = app.path();
     let mut paths = Vec::new();

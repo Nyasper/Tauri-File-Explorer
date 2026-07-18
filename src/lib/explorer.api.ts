@@ -68,6 +68,13 @@ export async function searchIndex(
 }
 
 /**
+ * Gets the current user's home directory path.
+ */
+export async function getHomeDir(): Promise<string> {
+  return invoke<string>("get_home_dir");
+}
+
+/**
  * Gets the list of common system paths (Desktop, Documents, Downloads, etc.).
  */
 export async function getSystemPaths(): Promise<SystemPathEntry[]> {

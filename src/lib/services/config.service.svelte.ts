@@ -7,7 +7,7 @@ export class ConfigService {
   #defaultConfig: ApplicationConfig = $state({
     defaultTheme: "system",
     defaultPath: "root",
-    onStartup: "last-session",
+    onStartup: "root",
     defaultViewMode: "list",
     sort: {
       by: "name",

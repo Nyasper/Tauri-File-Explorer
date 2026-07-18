@@ -72,7 +72,7 @@
           <div class="setting-item">
             <div class="setting-info">
               <span class="setting-label">Default Startup Path</span>
-              <span class="setting-desc">Set the directory to open upon launching the application.</span>
+              <span class="setting-desc">Directory to open on launch when "Custom" startup mode is selected.</span>
             </div>
             <input 
               type="text" 
@@ -89,9 +89,9 @@
             </div>
             <div class="option-switcher">
               {#each [
-                { value: 'last-session', label: 'Last Session' },
                 { value: 'root', label: 'Root' },
-                { value: 'home', label: 'Home' }
+                { value: 'home', label: 'Home' },
+                { value: 'custom', label: 'Custom' }
               ] as opt}
                 <button 
                   class="switcher-btn" 

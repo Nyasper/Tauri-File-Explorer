@@ -24,15 +24,37 @@ export class ExplorerState {
   // Default path helper based on OS
   private defaultPath = "";
 
+  // Resolve the initial path from the onStartup mode. "custom" uses the
+  // configured defaultPath; "last-session" falls back to "/" until session
+  // persistence is implemented.
+  private async resolveStartupPath(): Promise<string> {
+    switch (configService.config.onStartup) {
+      case "home":
+        try {
+          return await explorerApi.getHomeDir();
+        } catch (err) {
+          console.error(
+            "Failed to resolve home directory, falling back to root:",
+            err,
+          );
+          return "/";
+        }
+      case "custom": {
+        const custom = configService.config.defaultPath;
+        return custom === "root" || !custom.trim() ? "/" : custom;
+      }
+      case "last-session": // TODO: restore persisted session once implemented
+      case "root":
+      default:
+        return "/";
+    }
+  }
+
   constructor() {
     if (!browser) return;
-    // Determine initial default path (will fall back to "/" before config loads)
-    this.defaultPath =
-      configService.config.defaultPath === "root"
-        ? "/"
-        : configService.config.defaultPath;
-    // Initialize default tab
-    this.addTab(this.defaultPath);
+    // Initialize default tab at root; the configured startup path is applied
+    // once the async config load finishes (see effect below).
+    this.addTab(this.defaultPath || "/");
 
     // Watch for config initialization. We only want to re-apply defaults
     // once, when configInitialized flips from false to true, so that any tabs
@@ -45,40 +67,39 @@ export class ExplorerState {
         if (!configService.configInitialized || applied) return;
         applied = true;
 
-        const resolvedDefaultPath =
-          configService.config.defaultPath === "root"
-            ? "/"
-            : configService.config.defaultPath;
-        this.defaultPath = resolvedDefaultPath;
+        void (async () => {
+          const startupPath = await this.resolveStartupPath();
+          this.defaultPath = startupPath;
 
-        const configSortBy = configService.config.sort.by;
-        let sortBy: "name" | "size" | "modified" = "name";
-        if (configSortBy === "size") {
-          sortBy = "size";
-        } else if (configSortBy === "date") {
-          sortBy = "modified";
-        }
-
-        // Apply loaded defaults to every tab that hasn't been navigated yet
-        // (historyIndex === 0 means the user never moved off the initial path).
-        for (const tab of this.tabs) {
-          if (tab.historyIndex !== 0) continue;
-
-          tab.viewState.viewMode = configService.config.defaultViewMode;
-          tab.viewState.sortBy = sortBy;
-          tab.viewState.sortOrder = configService.config.sort.order;
-
-          const initial = tab.history[0];
-          // Apply default path if the tab hasn't navigated away from startup default
-          if (
-            (initial === "/" || initial === "root") &&
-            resolvedDefaultPath !== initial
-          ) {
-            tab.currentPath = resolvedDefaultPath;
-            tab.history = [resolvedDefaultPath];
-            this.loadDirectoryForTab(tab.id, "primary", resolvedDefaultPath);
+          const configSortBy = configService.config.sort.by;
+          let sortBy: "name" | "size" | "modified" = "name";
+          if (configSortBy === "size") {
+            sortBy = "size";
+          } else if (configSortBy === "date") {
+            sortBy = "modified";
           }
-        }
+
+          // Apply loaded defaults to every tab that hasn't been navigated yet
+          // (historyIndex === 0 means the user never moved off the initial path).
+          for (const tab of this.tabs) {
+            if (tab.historyIndex !== 0) continue;
+
+            tab.viewState.viewMode = configService.config.defaultViewMode;
+            tab.viewState.sortBy = sortBy;
+            tab.viewState.sortOrder = configService.config.sort.order;
+
+            const initial = tab.history[0];
+            // Apply startup path if the tab hasn't navigated away from it
+            if (
+              (initial === "/" || initial === "root") &&
+              startupPath !== initial
+            ) {
+              tab.currentPath = startupPath;
+              tab.history = [startupPath];
+              this.loadDirectoryForTab(tab.id, "primary", startupPath);
+            }
+          }
+        })();
       });
 
       // Re-filter the visible entries of every pane whenever the

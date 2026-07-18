@@ -14,6 +14,7 @@ pub fn run() {
             explorer_commands::move_file,
             explorer_commands::open_file,
             explorer_commands::search_index,
+            explorer_commands::get_home_dir,
             explorer_commands::get_system_paths,
             explorer_commands::list_sidebar_folders,
             explorer_commands::get_system_drives,
