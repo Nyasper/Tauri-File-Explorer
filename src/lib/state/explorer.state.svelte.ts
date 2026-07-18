@@ -1,10 +1,24 @@
 import type { Tab, ViewState, CacheEntry, FileEntry } from "../types/explorer.types";
 import { SvelteSet } from "svelte/reactivity";
 import { untrack } from "svelte";
+import { LazyStore } from "@tauri-apps/plugin-store";
 import * as explorerApi from "../explorer.api";
 import { browser } from "$app/environment";
 import { configService } from "$lib/services/config.service.svelte";
 import { recentsService } from "$lib/services/recents.service.svelte";
+
+// Shape of the persisted session used by the "last-session" startup mode
+interface PersistedPane {
+  currentPath: string;
+  viewMode: "list" | "grid";
+}
+interface PersistedTab extends PersistedPane {
+  splitView: PersistedPane | null;
+}
+interface PersistedSession {
+  tabs: PersistedTab[];
+  activeTabIndex: number;
+}
 
 export class ExplorerState {
   // Runes for reactive states
@@ -25,9 +39,16 @@ export class ExplorerState {
   // Default path helper based on OS
   private defaultPath = "";
 
+  // Session persistence ("last-session" startup mode)
+  private sessionStore: LazyStore | null = null;
+  // Gates session saving until the config is loaded and the startup restore
+  // attempt finished, so the stored session is never overwritten before
+  // being read back.
+  private sessionReady = $state(false);
+
   // Resolve the initial path from the onStartup mode. "custom" uses the
-  // configured defaultPath; "last-session" falls back to "/" until session
-  // persistence is implemented.
+  // configured defaultPath; "last-session" is handled separately by
+  // tryRestoreSession and falls back to "/" here.
   private async resolveStartupPath(): Promise<string> {
     switch (configService.config.onStartup) {
       case "home":
@@ -44,7 +65,7 @@ export class ExplorerState {
         const custom = configService.config.defaultPath;
         return custom === "root" || !custom.trim() ? "/" : custom;
       }
-      case "last-session": // TODO: restore persisted session once implemented
+      case "last-session": // handled by tryRestoreSession; fallback when it fails
       case "root":
       default:
         return "/";
@@ -53,6 +74,7 @@ export class ExplorerState {
 
   constructor() {
     if (!browser) return;
+    this.sessionStore = new LazyStore("session.json");
     // Initialize default tab at root; the configured startup path is applied
     // once the async config load finishes (see effect below).
     this.addTab(this.defaultPath || "/");
@@ -69,6 +91,16 @@ export class ExplorerState {
         applied = true;
 
         void (async () => {
+          // "last-session" mode restores the persisted tabs instead of
+          // resolving a startup path.
+          if (configService.config.onStartup === "last-session") {
+            const restored = await this.tryRestoreSession();
+            if (restored) {
+              this.sessionReady = true;
+              return;
+            }
+          }
+
           const startupPath = await this.resolveStartupPath();
           this.defaultPath = startupPath;
 
@@ -94,6 +126,8 @@ export class ExplorerState {
               this.loadDirectoryForTab(tab.id, "primary", startupPath);
             }
           }
+
+          this.sessionReady = true;
         })();
       });
 
@@ -139,7 +173,106 @@ export class ExplorerState {
           }
         });
       });
+
+      // Persist the session (debounced) so "last-session" mode can restore
+      // it on the next launch. Gated by sessionReady to never overwrite the
+      // stored session before the startup restore attempt has read it.
+      $effect(() => {
+        const snapshot: PersistedTab[] = this.tabs.map((t) => ({
+          currentPath: t.currentPath,
+          viewMode: t.viewState.viewMode,
+          splitView: t.splitView
+            ? {
+                currentPath: t.splitView.currentPath,
+                viewMode: t.splitView.viewState.viewMode,
+              }
+            : null,
+        }));
+        const activeTabIndex = this.tabs.findIndex(
+          (t) => t.id === this.activeTabId,
+        );
+        if (!this.sessionReady) return;
+
+        const timer = setTimeout(() => {
+          void this.persistSession({ tabs: snapshot, activeTabIndex });
+        }, 500);
+        return () => clearTimeout(timer);
+      });
     });
+  }
+
+  // Restore the persisted session tabs for "last-session" mode.
+  // Returns false when there is no usable stored session.
+  private async tryRestoreSession(): Promise<boolean> {
+    if (!this.sessionStore) return false;
+    try {
+      const session = await this.sessionStore.get<PersistedSession>("session");
+      if (
+        !session ||
+        !Array.isArray(session.tabs) ||
+        session.tabs.length === 0
+      ) {
+        return false;
+      }
+
+      const sortBy = this.mapConfigSortBy();
+      const sortOrder = configService.config.sort.order;
+
+      const buildPane = (p: PersistedPane): Tab => ({
+        id: crypto.randomUUID(),
+        currentPath: p.currentPath,
+        history: [p.currentPath],
+        historyIndex: 0,
+        viewState: {
+          viewMode: p.viewMode === "grid" ? "grid" : "list",
+          searchQuery: "",
+          sortBy,
+          sortOrder,
+        },
+        files: [],
+        selectedPaths: new SvelteSet<string>(),
+        splitView: null,
+      });
+
+      this.tabs = session.tabs.map((t) => {
+        const tab = buildPane(t);
+        tab.splitView = t.splitView ? buildPane(t.splitView) : null;
+        return tab;
+      });
+
+      const index = Math.min(
+        Math.max(session.activeTabIndex ?? 0, 0),
+        this.tabs.length - 1,
+      );
+      this.activeTabId = this.tabs[index].id;
+      this.activePaneSide = "primary";
+
+      // Load directory contents for every restored pane
+      for (const tab of this.tabs) {
+        void this.loadDirectoryForTab(tab.id, "primary", tab.currentPath);
+        if (tab.splitView) {
+          void this.loadDirectoryForTab(
+            tab.id,
+            "secondary",
+            tab.splitView.currentPath,
+          );
+        }
+      }
+      return true;
+    } catch (err) {
+      console.error("Failed to restore session:", err);
+      return false;
+    }
+  }
+
+  private async persistSession(session: PersistedSession) {
+    if (!this.sessionStore) return;
+    try {
+      await this.sessionStore.set("session", session);
+      await this.sessionStore.save();
+    } catch (err) {
+      console.error("Failed to persist session:", err);
+    }
   }
 
   // Map the config sort criteria to the pane ViewState one
