@@ -21,6 +21,11 @@ export const globalShortcutsList: ShortcutItem[] = [
     action: "Toggle Settings Modal Window",
     category: "System",
   },
+  {
+    key: "Ctrl + H",
+    action: "Toggle hidden files visibility",
+    category: "System",
+  },
   { key: "Ctrl + T", action: "New tab", category: "Tabs" },
   { key: "Ctrl + W", action: "Close current tab", category: "Tabs" },
   { key: "Right Click Tab", action: "Duplicate current tab", category: "Tabs" },
@@ -200,6 +205,22 @@ export function useKeybindingService() {
         e.stopPropagation();
         console.debug("Ctrl + B shortcut pressed");
         configService.config.showSidebar = !configService.config.showSidebar;
+        return;
+      }
+
+      // 9. Ctrl + H -> Toggle hidden files visibility
+      if (ctrlKey && e.key.toLowerCase() === "h") {
+        // Skip if user is actively typing in an input or textarea
+        if (
+          e.target instanceof HTMLInputElement ||
+          e.target instanceof HTMLTextAreaElement
+        )
+          return;
+        e.preventDefault();
+        e.stopPropagation();
+        console.debug("Ctrl + H shortcut pressed");
+        configService.config.showHiddenFiles =
+          !configService.config.showHiddenFiles;
         return;
       }
     };

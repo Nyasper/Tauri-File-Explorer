@@ -9,6 +9,7 @@ export interface FileEntry {
   readonly: boolean;
   permissions?: string;
   extension?: string;
+  is_hidden: boolean;
 }
 
 export interface ViewState {

@@ -32,6 +32,21 @@ pub struct FileEntry {
     pub readonly: bool,
     pub permissions: Option<String>,
     pub extension: Option<String>,
+    pub is_hidden: bool,
+}
+
+/// Cross-platform hidden-file detection: dot-prefixed names count as hidden on
+/// every platform; on Windows the FILE_ATTRIBUTE_HIDDEN flag is also honored.
+/// Works with both std::fs::Metadata and tokio::fs::Metadata since both
+/// implement the platform MetadataExt trait.
+#[cfg(windows)]
+fn is_hidden_entry(name: &str, metadata: &impl std::os::windows::fs::MetadataExt) -> bool {
+    name.starts_with('.') || (metadata.file_attributes() & 0x2) != 0 // FILE_ATTRIBUTE_HIDDEN
+}
+
+#[cfg(not(windows))]
+fn is_hidden_entry<T>(name: &str, _metadata: &T) -> bool {
+    name.starts_with('.')
 }
 
 // Global in-memory search index for quick search capability
@@ -163,6 +178,7 @@ async fn build_index_recursive(root: std::path::PathBuf, current_depth: u32, max
                 .unwrap_or(0);
 
             let is_dir = metadata.is_dir();
+            let is_hidden = is_hidden_entry(&name, &metadata);
 
             entries.push(FileEntry {
                 name,
@@ -173,6 +189,7 @@ async fn build_index_recursive(root: std::path::PathBuf, current_depth: u32, max
                 readonly: metadata.permissions().readonly(),
                 permissions: Some(get_permissions_string(&metadata)),
                 extension: entry.path().extension().map(|e| e.to_string_lossy().to_string()),
+                is_hidden,
             });
 
             if is_dir {
@@ -253,6 +270,8 @@ pub fn list_dir(path: String) -> Result<Vec<FileEntry>, String> {
             .map(|d| d.as_millis() as u64)
             .unwrap_or(0);
 
+        let is_hidden = is_hidden_entry(&name, &metadata);
+
         result.push(FileEntry {
             name,
             path: path_str,
@@ -262,6 +281,7 @@ pub fn list_dir(path: String) -> Result<Vec<FileEntry>, String> {
             readonly: metadata.permissions().readonly(),
             permissions: Some(get_permissions_string(&metadata)),
             extension: entry.path().extension().map(|e| e.to_string_lossy().to_string()),
+            is_hidden,
         });
     }
 
@@ -464,6 +484,8 @@ async fn search_dir_recursive(root: std::path::PathBuf, query_lower: String) -> 
                     .map(|d| d.as_millis() as u64)
                     .unwrap_or(0);
 
+                let is_hidden = is_hidden_entry(&name, &metadata);
+
                 results.push(FileEntry {
                     name,
                     path: path_str,
@@ -473,6 +495,7 @@ async fn search_dir_recursive(root: std::path::PathBuf, query_lower: String) -> 
                     readonly: metadata.permissions().readonly(),
                     permissions: Some(get_permissions_string(&metadata)),
                     extension: entry.path().extension().map(|e| e.to_string_lossy().to_string()),
+                    is_hidden,
                 });
             }
 

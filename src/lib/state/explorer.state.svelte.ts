@@ -1,5 +1,6 @@
-import type { Tab, ViewState, CacheEntry } from "../types/explorer.types";
+import type { Tab, ViewState, CacheEntry, FileEntry } from "../types/explorer.types";
 import { SvelteSet } from "svelte/reactivity";
+import { untrack } from "svelte";
 import * as explorerApi from "../explorer.api";
 import { browser } from "$app/environment";
 import { configService } from "$lib/services/config.service.svelte";
@@ -79,7 +80,51 @@ export class ExplorerState {
           }
         }
       });
+
+      // Re-filter the visible entries of every pane whenever the
+      // showHiddenFiles toggle changes. Only the toggle is tracked;
+      // the refilter itself reads pane state without subscribing to it
+      // (navigations already apply the filter on load).
+      let skipInitialRun = true;
+      $effect(() => {
+        configService.config.showHiddenFiles;
+        if (skipInitialRun) {
+          skipInitialRun = false;
+          return;
+        }
+        untrack(() => {
+          for (const tab of this.tabs) {
+            this.refilterPane(tab.id, tab, "primary");
+            if (tab.splitView) {
+              this.refilterPane(tab.id, tab.splitView, "secondary");
+            }
+          }
+        });
+      });
     });
+  }
+
+  // Filter out hidden entries when the user disabled them in settings.
+  // Raw (unfiltered) entries stay in the cache so toggling the setting
+  // back on doesn't require a refetch.
+  private filterHiddenEntries(entries: FileEntry[]): FileEntry[] {
+    if (configService.config.showHiddenFiles) return entries;
+    return entries.filter((entry) => !entry.is_hidden);
+  }
+
+  // Re-apply the hidden-files filter to a pane that is already loaded
+  private refilterPane(tabId: string, pane: Tab, side: "primary" | "secondary") {
+    if (pane.viewState.searchQuery.trim()) {
+      // Search results are filtered when assigned; re-run for correctness
+      void this.searchInPane(tabId, side, pane.viewState.searchQuery);
+      return;
+    }
+    const cached = this.cache.get(pane.currentPath);
+    if (cached) {
+      pane.files = this.filterHiddenEntries(cached.entries);
+    } else {
+      void this.loadDirectoryForTab(tabId, side, pane.currentPath);
+    }
   }
 
   get activeTab(): Tab {
@@ -313,7 +358,7 @@ export class ExplorerState {
     const cached = this.cache.get(path);
     if (cached) {
       // Instantly populate files from cache for fluid immediate rendering
-      pane.files = cached.entries;
+      pane.files = this.filterHiddenEntries(cached.entries);
 
       // If cached less than 10 seconds ago, don't trigger background reload
       const ageMs = Date.now() - cached.timestamp;
@@ -326,7 +371,7 @@ export class ExplorerState {
     try {
       const freshEntries = await explorerApi.listDir(path);
 
-      // Update Cache
+      // Update Cache (raw entries; filtering happens on assignment)
       this.cache.set(path, {
         entries: freshEntries,
         timestamp: Date.now(),
@@ -334,7 +379,7 @@ export class ExplorerState {
 
       // Update pane state (only if pane path didn't change while loading)
       if (pane.currentPath === path) {
-        pane.files = freshEntries;
+        pane.files = this.filterHiddenEntries(freshEntries);
       }
 
       // Update the sidebar tree dynamically to reflect changes in background
@@ -378,7 +423,7 @@ export class ExplorerState {
         pane.currentPath === requestedPath &&
         pane.viewState.searchQuery === query
       ) {
-        pane.files = results;
+        pane.files = this.filterHiddenEntries(results);
       }
     } catch (err) {
       console.error("Indexed search failed", err);
