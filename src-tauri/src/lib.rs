@@ -1,5 +1,4 @@
 pub mod explorer_commands;
-pub mod utils;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -20,7 +19,6 @@ pub fn run() {
             explorer_commands::get_system_drives,
             explorer_commands::get_recycle_bin_path,
             explorer_commands::empty_recycle_bin,
-            utils::sleep,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

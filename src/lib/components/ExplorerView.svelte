@@ -5,6 +5,7 @@
   import EntryList from './EntryList.svelte';
   import EntryGrid from './EntryGrid.svelte';
   import { formatBytes } from '$lib/utils/formater';
+  import { getParentPath } from '$lib/utils/path.helper';
   import { fade } from 'svelte/transition';
   import { SvelteSet } from 'svelte/reactivity';
   import Sidebar from './Sidebar.svelte';
@@ -53,6 +54,24 @@
   // Search input values per pane
   let primarySearchVal = $state('');
   let secondarySearchVal = $state('');
+
+  // Local buffers for the path inputs so that typing into them doesn't
+  // mutate pane.currentPath live (which would break the breadcrumb and
+  // other deriveds while the user is still editing). We commit the value
+  // only when the form is submitted.
+  let primaryPathVal = $state(activeTab?.currentPath ?? '');
+  let secondaryPathVal = $state(activeTab.splitView?.currentPath ?? '');
+
+  // Keep the local buffers in sync when navigation happens through other
+  // means (history buttons, sidebar clicks, goUp, goBack, ...).
+  $effect(() => {
+    const t = activeTab;
+    if (t) primaryPathVal = t.currentPath;
+  });
+  $effect(() => {
+    const sv = activeTab?.splitView;
+    if (sv) secondaryPathVal = sv.currentPath;
+  });
 
   // Svelte 5 Derived views of active tab details
   const activeTab = $derived(explorerState.activeTab);
@@ -115,29 +134,8 @@
 
   async function goUp(side: 'primary' | 'secondary') {
     const { pane } = getPaneDetails(side);
-    const path = pane.currentPath;
-    
-    // Calculate parent folder path
-    const normalized = path.replace(/\\/g, '/');
-    const parts = normalized.split('/').filter(Boolean);
-    
-    if (parts.length === 0) return; // Already at root
-    
-    // Reconstruct parent path
-    let parentPath = '';
-    if (path.includes(':')) {
-      // Windows drive support
-      const drive = path.split(':')[0] + ':';
-      parentPath = drive + '\\' + parts.slice(1, -1).join('\\');
-      if (parts.length === 2) {
-        parentPath = drive + '\\';
-      }
-    } else {
-      // Unix/Linux/macOS path
-      parentPath = '/' + parts.slice(0, -1).join('/');
-      if (parentPath === '') parentPath = '/';
-    }
-    
+    const parentPath = getParentPath(pane.currentPath);
+    if (!parentPath) return; // Already at root
     await handleNavigate(side, parentPath);
   }
 
@@ -286,7 +284,21 @@
   async function handlePathSubmit(side: 'primary' | 'secondary', e: Event) {
     e.preventDefault();
     const { pane } = getPaneDetails(side);
-    await handleNavigate(side, pane.currentPath);
+    // Use the local buffered input value (which reflects what the user
+    // actually typed) and let handleNavigate commit it to pane.currentPath
+    // via explorerState.navigate. If navigation fails the buffer stays as
+    // the user typed it (they can edit again); the pane.currentPath is not
+    // left in a half-typed state because navigate handles errors itself.
+    const inputValue =
+      side === 'secondary' ? secondaryPathVal : primaryPathVal;
+    await handleNavigate(side, inputValue);
+    // If the destination was invalid, pane.currentPath remains unchanged;
+    // resync the local buffer so the input doesn't show a stale value.
+    if (side === 'secondary') {
+      secondaryPathVal = pane.currentPath;
+    } else {
+      primaryPathVal = pane.currentPath;
+    }
   }
 
   // Search input typing
@@ -406,7 +418,7 @@
             <input 
               type="text" 
               class="path-input" 
-              bind:value={activeTab.currentPath} 
+              bind:value={primaryPathVal} 
               placeholder="Path..."
             />
           </form>
@@ -538,7 +550,7 @@
               <input 
                 type="text" 
                 class="path-input" 
-                bind:value={activeTab.splitView.currentPath} 
+                bind:value={secondaryPathVal} 
                 placeholder="Path..."
               />
             </form>

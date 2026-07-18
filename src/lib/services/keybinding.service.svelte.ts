@@ -60,6 +60,11 @@ export function useKeybindingService() {
 
       // 1. Ctrl/Cmd + T -> New Tab (defaults to current tab path, or '/')
       if (ctrlKey && e.key.toLowerCase() === "t") {
+        if (
+          e.target instanceof HTMLInputElement ||
+          e.target instanceof HTMLTextAreaElement
+        )
+          return;
         console.debug("New Tab shortcut pressed");
         e.preventDefault();
         e.stopPropagation();
@@ -70,6 +75,11 @@ export function useKeybindingService() {
 
       // 2. Ctrl/Cmd + W -> Close Tab
       if (ctrlKey && e.key.toLowerCase() === "w") {
+        if (
+          e.target instanceof HTMLInputElement ||
+          e.target instanceof HTMLTextAreaElement
+        )
+          return;
         e.preventDefault();
         e.stopPropagation();
         console.debug("Close Tab shortcut pressed");
@@ -78,7 +88,12 @@ export function useKeybindingService() {
       }
 
       // 3. Ctrl + Tab / Ctrl + Shift + Tab -> Switch Tabs
-      if (e.ctrlKey && e.key === "Tab") {
+      if (ctrlKey && e.key === "Tab") {
+        if (
+          e.target instanceof HTMLInputElement ||
+          e.target instanceof HTMLTextAreaElement
+        )
+          return;
         e.preventDefault();
         e.stopPropagation();
         console.debug("Switch Tab shortcut pressed");

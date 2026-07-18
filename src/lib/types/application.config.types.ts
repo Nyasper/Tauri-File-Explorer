@@ -31,8 +31,6 @@ export interface ApplicationConfig {
   confirmDelete: boolean;
   openMode: OpenMode;
   showSidebar: boolean;
-  // calculateFolderSizes: boolean;
-  // showBreadcrumbs: boolean;
   language: Lang;
   defaultAccentColor: AccentColor;
 }

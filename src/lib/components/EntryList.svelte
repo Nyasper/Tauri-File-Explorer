@@ -3,12 +3,13 @@
   import type { FileEntry } from '../types/explorer.types';
   import { explorerState } from '../state/explorer.state.svelte';
   import { contextMenu, type ContextMenuItem } from '$lib/services/context-menu.service.svelte';
+  import { formatBytes } from '$lib/utils/formater';
 
   // Svelte 5 Props using runes
-  let { 
-    files = [], 
-    onNavigate, 
-    onOpenFile, 
+  let {
+    files = [],
+    onNavigate,
+    onOpenFile,
     paneSide,
     actions,
     canPaste
@@ -29,6 +30,14 @@
     };
     canPaste: boolean;
   } = $props();
+
+  // Derived reactive views of active tab & active pane, hoisted above the
+  // handlers that close over them for readability.
+  const activeTab = $derived(explorerState.activeTab);
+  const paneState = $derived(paneSide === 'secondary' && activeTab.splitView ? activeTab.splitView : activeTab);
+  const sortBy = $derived(paneState.viewState.sortBy);
+  const sortOrder = $derived(paneState.viewState.sortOrder);
+  const selectedPaths = $derived(paneState.selectedPaths);
 
   // SVG Icons for context menu
   const iconOpen = `<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>`;
@@ -148,14 +157,6 @@
     return formatBytes(bytes);
   }
 
-  function formatBytes(bytes: number): string {
-    if (bytes === 0) return '0 B';
-    const k = 1024;
-    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
-  }
-
   function formatDate(timestamp: number): string {
     if (!timestamp) return '--';
     return new Date(timestamp).toLocaleString(undefined, {
@@ -199,13 +200,6 @@
   function handleSort(column: 'name' | 'size' | 'modified') {
     explorerState.sortPane(explorerState.activeTabId, paneSide, column);
   }
-
-  // Get current sort details for visual arrows
-  const activeTab = $derived(explorerState.activeTab);
-  const paneState = $derived(paneSide === 'secondary' && activeTab.splitView ? activeTab.splitView : activeTab);
-  const sortBy = $derived(paneState.viewState.sortBy);
-  const sortOrder = $derived(paneState.viewState.sortOrder);
-  const selectedPaths = $derived(paneState.selectedPaths);
 </script>
 
 <!-- svelte-ignore a11y_click_events_have_key_events -->

@@ -68,13 +68,6 @@ export async function searchIndex(
 }
 
 /**
- * Wait for a specified number of milliseconds.
- */
-export async function sleep(ms: number): Promise<void> {
-  return invoke<void>("sleep", { ms });
-}
-
-/**
  * Gets the list of common system paths (Desktop, Documents, Downloads, etc.).
  */
 export async function getSystemPaths(): Promise<SystemPathEntry[]> {

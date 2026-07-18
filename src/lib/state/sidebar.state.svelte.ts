@@ -1,11 +1,12 @@
 import type { SidebarNode } from "../types/sidebar.types";
 import * as explorerApi from "../explorer.api";
-import { normalizePath, isParentPath } from "../utils/path.helper";
+import { normalizePath, isParentPath, getParentPath as getParentPathHelper } from "../utils/path.helper";
 
 export class SidebarState {
   roots: SidebarNode[] = $state([]);
   drives: SidebarNode[] = $state([]);
   isInitialized = $state(false);
+  #expandGeneration = 0;
 
   constructor() {
     this.initialize();
@@ -46,14 +47,24 @@ export class SidebarState {
   /**
    * Recursively traverses and expands nodes that lead to the active directory,
    * while collapsing other branches that are not part of the active path.
+   *
+   * A generation token is used to ignore stale runs triggered by rapid
+   * navigation: if a newer call to expandToPath starts before this one
+   * finishes, the older run is abandoned to avoid clobbering freshly
+   * expanded/collapsed state.
    */
   async expandToPath(activePath: string) {
     if (!activePath) return;
     const normActive = normalizePath(activePath);
+    const generation = ++this.#expandGeneration;
+
+    const isStale = () => generation !== this.#expandGeneration;
 
     const processNodes = async (nodes: SidebarNode[]): Promise<boolean> => {
+      if (isStale()) return false;
       let matchedAny = false;
       for (const node of nodes) {
+        if (isStale()) return false;
         const normNode = normalizePath(node.path);
 
         if (isParentPath(normNode, normActive)) {
@@ -78,6 +89,7 @@ export class SidebarState {
     };
 
     await processNodes(this.roots);
+    if (isStale()) return;
     await processNodes(this.drives);
   }
 
@@ -169,20 +181,12 @@ export class SidebarState {
   }
 
   /**
-   * Helper to resolve the parent path.
+   * Helper to resolve the parent path. Delegates to the shared
+   * path.helper utility so separator handling and drive-root edge
+   * cases stay in a single place.
    */
   getParentPath(path: string): string {
-    const normalized = path.replace(/\\/g, "/");
-    const parts = normalized.split("/").filter(Boolean);
-    if (parts.length <= 1) return "";
-
-    if (path.includes(":")) {
-      const drive = path.split(":")[0] + ":";
-      if (parts.length === 2) return drive + "\\";
-      return drive + "\\" + parts.slice(1, -1).join("\\");
-    }
-
-    return "/" + parts.slice(0, -1).join("/");
+    return getParentPathHelper(path);
   }
 }
 

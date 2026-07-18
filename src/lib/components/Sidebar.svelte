@@ -38,7 +38,11 @@
       // Refresh current pane if it shows the recycle bin
       if (explorerState.activePanePath) {
         const recyclePath = await explorerApi.getRecycleBinPath();
-        if (explorerState.activePanePath.startsWith(recyclePath.replace(/\\/g, '/'))) {
+        // Normalize both sides so backslashes/forward slashes don't break
+        // the prefix comparison on Windows (Rust paths use backslashes).
+        const normalizedActive = normalizePath(explorerState.activePanePath);
+        const normalizedRecycle = normalizePath(recyclePath);
+        if (normalizedActive.startsWith(normalizedRecycle)) {
           await explorerState.refresh(explorerState.activeTab.id, explorerState.activePaneSide);
         }
       }

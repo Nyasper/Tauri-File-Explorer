@@ -1,4 +1,4 @@
-import { browser } from "$app/env";
+import { browser } from "$app/environment";
 import { LazyStore } from "@tauri-apps/plugin-store";
 import type { ApplicationConfig } from "../types/application.config.types";
 
@@ -32,21 +32,44 @@ export class ConfigService {
       this.#store = new LazyStore("config.json");
       this.initConfig();
 
-      // Listen for system theme changes
       const systemMedia = window.matchMedia("(prefers-color-scheme: dark)");
-      systemMedia.addEventListener("change", (e) => {
-        if (this.config.defaultTheme === "system") {
-          this.applyTheme(e.matches ? "dark" : "light");
-        }
-      });
 
       $effect.root(() => {
+        // System theme changes: register/unregister via this effect's
+        // cleanup so the listener is never leaked even if the singleton
+        // is destroyed.
+        $effect(() => {
+          const onThemeChange = (e: MediaQueryListEvent) => {
+            if (this.config.defaultTheme === "system") {
+              this.applyTheme(e.matches ? "dark" : "light");
+            }
+          };
+          systemMedia.addEventListener("change", onThemeChange);
+          return () => {
+            systemMedia.removeEventListener("change", onThemeChange);
+          };
+        });
+
         $effect(() => {
           if (this.configInitialized) {
-            // Read all properties of config and update store if changed
-            JSON.stringify(this.config);
+            // Touch each top-level field so $effect tracks them, then
+            // persist the whole config.
+            void this.config.defaultTheme;
+            void this.config.defaultPath;
+            void this.config.onStartup;
+            void this.config.defaultViewMode;
+            void this.config.sort.by;
+            void this.config.sort.order;
+            void this.config.rememberHistory;
+            void this.config.rememberRecents;
+            void this.config.showHiddenFiles;
+            void this.config.showExtensions;
+            void this.config.confirmDelete;
+            void this.config.openMode;
+            void this.config.showSidebar;
+            void this.config.language;
+            void this.config.defaultAccentColor;
             this.updateConfig(this.config);
-            console.debug("config updated ", this.config);
           }
         });
 
@@ -85,10 +108,8 @@ export class ConfigService {
 
       if (keys.length === 0) {
         await this.updateStoreWithDefaultConfig();
-        console.debug("empty store, populating defaults...");
       } else {
         await this.loadConfigFromStore(keys);
-        console.debug("loading config from store...");
       }
     } catch (err) {
       console.error("Failed to load configuration from Tauri Store:", err);
@@ -125,10 +146,14 @@ export class ConfigService {
   private async loadConfigFromStore(configKeys: string[]) {
     if (!this.#store) return;
     try {
+      const defaultKeys = Object.keys(this.#defaultConfig) as (keyof ApplicationConfig)[];
       for (const key of configKeys) {
+        if (!defaultKeys.includes(key as keyof ApplicationConfig)) continue;
         const value = await this.#store.get(key);
-        if (value !== undefined && key in this.#defaultConfig) {
-          (this.config as any)[key] = value;
+        if (value !== undefined) {
+          (this.config as Record<keyof ApplicationConfig, unknown>)[
+            key as keyof ApplicationConfig
+          ] = value as never;
         }
       }
     } catch (err) {

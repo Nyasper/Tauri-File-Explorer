@@ -28,6 +28,12 @@ export class ContextMenuService {
     e.preventDefault();
     e.stopPropagation();
 
+    // If already open, clean up previous listeners to avoid accumulation
+    if (this.isOpen) {
+      window.removeEventListener("click", this.close);
+      window.removeEventListener("contextmenu", this.closeOutside);
+    }
+
     this.position = { x: e.clientX, y: e.clientY };
     this.type = type;
     this.items = items;

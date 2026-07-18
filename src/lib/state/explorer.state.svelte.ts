@@ -1,7 +1,7 @@
 import type { Tab, ViewState, CacheEntry } from "../types/explorer.types";
 import { SvelteSet } from "svelte/reactivity";
 import * as explorerApi from "../explorer.api";
-import { browser } from "$app/env";
+import { browser } from "$app/environment";
 import { configService } from "$lib/services/config.service.svelte";
 
 export class ExplorerState {
@@ -33,46 +33,49 @@ export class ExplorerState {
     // Initialize default tab
     this.addTab(this.defaultPath);
 
-    // Watch for config initialization to apply the correct defaults to the initial tab
+    // Watch for config initialization. We only want to re-apply defaults
+    // once, when configInitialized flips from false to true, so that any tabs
+    // created *before* the async config load finished get the loaded values
+    // instead of the hardcoded defaults. Subsequent config edits are applied
+    // by ConfigModal mutations directly to configService.config.
     $effect.root(() => {
+      let applied = false;
       $effect(() => {
-        if (configService.configInitialized) {
-          const resolvedDefaultPath =
-            configService.config.defaultPath === "root"
-              ? "/"
-              : configService.config.defaultPath;
-          this.defaultPath = resolvedDefaultPath;
+        if (!configService.configInitialized || applied) return;
+        applied = true;
 
-          const firstTab = this.tabs[0];
-          if (firstTab && firstTab.historyIndex === 0) {
-            // Apply loaded config defaultViewMode
-            firstTab.viewState.viewMode = configService.config.defaultViewMode;
+        const resolvedDefaultPath =
+          configService.config.defaultPath === "root"
+            ? "/"
+            : configService.config.defaultPath;
+        this.defaultPath = resolvedDefaultPath;
 
-            // Apply loaded config sorting settings
-            const configSortBy = configService.config.sort.by;
-            let sortBy: "name" | "size" | "modified" = "name";
-            if (configSortBy === "size") {
-              sortBy = "size";
-            } else if (configSortBy === "date") {
-              sortBy = "modified";
-            }
-            firstTab.viewState.sortBy = sortBy;
-            firstTab.viewState.sortOrder = configService.config.sort.order;
+        const configSortBy = configService.config.sort.by;
+        let sortBy: "name" | "size" | "modified" = "name";
+        if (configSortBy === "size") {
+          sortBy = "size";
+        } else if (configSortBy === "date") {
+          sortBy = "modified";
+        }
 
-            // Apply default path if the tab hasn't navigated away from startup default
-            if (
-              (firstTab.history[0] === "/" || firstTab.history[0] === "root") &&
-              resolvedDefaultPath !== firstTab.history[0]
-            ) {
-              firstTab.currentPath = resolvedDefaultPath;
-              firstTab.history = [resolvedDefaultPath];
-              // Reload the directory with the new sorting and path applied
-              this.loadDirectoryForTab(
-                firstTab.id,
-                "primary",
-                resolvedDefaultPath,
-              );
-            }
+        // Apply loaded defaults to every tab that hasn't been navigated yet
+        // (historyIndex === 0 means the user never moved off the initial path).
+        for (const tab of this.tabs) {
+          if (tab.historyIndex !== 0) continue;
+
+          tab.viewState.viewMode = configService.config.defaultViewMode;
+          tab.viewState.sortBy = sortBy;
+          tab.viewState.sortOrder = configService.config.sort.order;
+
+          const initial = tab.history[0];
+          // Apply default path if the tab hasn't navigated away from startup default
+          if (
+            (initial === "/" || initial === "root") &&
+            resolvedDefaultPath !== initial
+          ) {
+            tab.currentPath = resolvedDefaultPath;
+            tab.history = [resolvedDefaultPath];
+            this.loadDirectoryForTab(tab.id, "primary", resolvedDefaultPath);
           }
         }
       });
@@ -90,14 +93,6 @@ export class ExplorerState {
       return tab.splitView.currentPath;
     }
     return tab.currentPath;
-  }
-
-  // Helper to get active pane (primary tab or secondary split-pane)
-  getActivePane(tab: Tab): { pane: Tab; isSecondary: boolean } {
-    if (tab.splitView && this.activePaneSide === "secondary") {
-      return { pane: tab.splitView, isSecondary: true };
-    }
-    return { pane: tab, isSecondary: false };
   }
 
   // Add a new tab
@@ -375,10 +370,12 @@ export class ExplorerState {
       return;
     }
 
+    const requestedPath = pane.currentPath;
     try {
-      const results = await explorerApi.searchIndex(query, pane.currentPath);
+      const results = await explorerApi.searchIndex(query, requestedPath);
+      // Discard results if the pane navigated away or the query changed while searching
       if (
-        pane.currentPath === pane.currentPath &&
+        pane.currentPath === requestedPath &&
         pane.viewState.searchQuery === query
       ) {
         pane.files = results;

@@ -7,12 +7,16 @@
   let adjustedX = $state(0);
   let adjustedY = $state(0);
 
-  // Re-calculate menu boundaries to avoid screen overflow
+  // Re-calculate menu boundaries to avoid screen overflow.
+  // A token guard avoids races when the menu is rapidly re-opened before
+  // the previous tick() resolved.
+  let positionToken = 0;
   $effect(() => {
     if (contextMenu.isOpen && menuEl) {
+      const token = ++positionToken;
       // Wait for DOM layout to get accurate element bounds
       tick().then(() => {
-        if (!menuEl) return;
+        if (token !== positionToken || !menuEl) return;
         const rect = menuEl.getBoundingClientRect();
         const winWidth = window.innerWidth;
         const winHeight = window.innerHeight;
@@ -33,6 +37,23 @@
       });
     }
   });
+
+  // Run a context-menu item's action, closing the menu afterwards.
+  // Actions may be async; we swallow rejected promises to prevent
+  // unhandled promise rejections bubbling up.
+  function runAction(action: () => void | Promise<void>) {
+    try {
+      const result = action();
+      if (result && typeof (result as Promise<void>).then === 'function') {
+        (result as Promise<void>).catch((err) =>
+          console.error('Context menu action failed:', err)
+        );
+      }
+    } catch (err) {
+      console.error('Context menu action threw:', err);
+    }
+    contextMenu.close();
+  }
 </script>
 
 {#if contextMenu.isOpen}
@@ -49,7 +70,7 @@
       tabindex="-1"
       onclick={(e) => e.stopPropagation()}
     >
-      {#each contextMenu.items as item}
+      {#each contextMenu.items as item, i (i + ':' + (item.isSeparator ? 'sep' : (item.label ?? '')))}
         {#if item.isSeparator}
           <div class="menu-separator"></div>
         {:else}
@@ -58,8 +79,7 @@
             class:disabled={item.disabled}
             onclick={() => {
               if (!item.disabled) {
-                item.action();
-                contextMenu.close();
+                runAction(item.action);
               }
             }}
             disabled={item.disabled}

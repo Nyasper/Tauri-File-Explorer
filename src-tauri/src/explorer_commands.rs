@@ -521,7 +521,7 @@ pub struct SystemPathEntry {
     pub has_subfolders: bool,
 }
 
-fn has_elements_helper(path: &std::path::Path) -> bool {
+fn has_subfolders_helper(path: &std::path::Path) -> bool {
     if let Ok(entries) = std::fs::read_dir(path) {
         for entry in entries {
             if let Ok(entry) = entry {
@@ -538,7 +538,14 @@ fn has_elements_helper(path: &std::path::Path) -> bool {
                         }
                     }
                 }
-                return true; // Found a non-hidden item!
+                // Only count sub-directories: plain files shouldn't trigger the
+                // "has_subfolders" chevron (the field is used to decide if a
+                // sidebar node is expandable).
+                if let Ok(metadata) = entry.metadata() {
+                    if metadata.is_dir() {
+                        return true;
+                    }
+                }
             }
         }
     }
@@ -563,7 +570,7 @@ pub fn get_system_paths(app: tauri::AppHandle) -> Result<Vec<SystemPathEntry>, S
     for (name, dir_result) in dirs {
         if let Ok(dir_path) = dir_result {
             let path_str = dir_path.to_string_lossy().to_string();
-            let has_subfolders = has_elements_helper(&dir_path);
+            let has_subfolders = has_subfolders_helper(&dir_path);
             paths.push(SystemPathEntry {
                 name: name.to_string(),
                 path: path_str,
@@ -594,7 +601,7 @@ pub fn list_sidebar_folders(path: String) -> Result<Vec<SidebarFolder>, String> 
                 if metadata.is_dir() {
                     let path_str = entry.path().to_string_lossy().to_string();
                     let name = entry.file_name().to_string_lossy().to_string();
-                    let has_sub = has_elements_helper(&entry.path());
+                    let has_sub = has_subfolders_helper(&entry.path());
                     
                     folders.push(SidebarFolder {
                         name,
@@ -629,7 +636,7 @@ pub fn get_system_drives() -> Result<Vec<DriveEntry>, String> {
             let path = std::path::Path::new(&drive_path);
             if path.exists() {
                 let name = format!("Disk ({}:)", c as char);
-                let has_subfolders = has_elements_helper(path);
+                let has_subfolders = has_subfolders_helper(path);
                 drives.push(DriveEntry {
                     name,
                     path: drive_path,
@@ -642,7 +649,7 @@ pub fn get_system_drives() -> Result<Vec<DriveEntry>, String> {
     {
         let drive_path = "/".to_string();
         let path = std::path::Path::new(&drive_path);
-        let has_subfolders = has_elements_helper(path);
+        let has_subfolders = has_subfolders_helper(path);
         drives.push(DriveEntry {
             name: "Root (/)".to_string(),
             path: drive_path,
