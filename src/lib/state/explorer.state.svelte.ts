@@ -4,6 +4,7 @@ import { untrack } from "svelte";
 import * as explorerApi from "../explorer.api";
 import { browser } from "$app/environment";
 import { configService } from "$lib/services/config.service.svelte";
+import { recentsService } from "$lib/services/recents.service.svelte";
 
 export class ExplorerState {
   // Runes for reactive states
@@ -336,6 +337,9 @@ export class ExplorerState {
     pane.history.push(path);
     pane.historyIndex = pane.history.length - 1;
     pane.currentPath = path;
+
+    // Track the visited folder in the recents list (no-op if disabled)
+    recentsService.add(path, true);
 
     await this.loadDirectoryForTab(tabId, side, path);
   }

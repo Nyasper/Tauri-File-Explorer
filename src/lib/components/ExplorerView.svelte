@@ -11,6 +11,7 @@
   import Sidebar from './Sidebar.svelte';
   import { configService } from '../services/config.service.svelte';
   import { dialogService } from '../services/dialog.service.svelte';
+  import { recentsService } from '../services/recents.service.svelte';
 
 
 
@@ -124,6 +125,8 @@
   async function handleOpenFile(path: string) {
     try {
       await explorerApi.openFile(path);
+      // Track the opened file in the recents list (no-op if disabled)
+      recentsService.add(path, false);
     } catch (err) {
       await dialogService.alert(`Could not open file: ${err}`);
     }
