@@ -9,3 +9,20 @@ export function formatBytes(bytes: number): string {
   );
   return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
 }
+
+/**
+ * Returns the name to display for a file system entry. When `showExtensions`
+ * is false, the trailing ".ext" is stripped from file names. Directories are
+ * never truncated since dots are valid characters in folder names.
+ */
+export function formatDisplayName(
+  name: string,
+  isDir: boolean,
+  showExtensions: boolean,
+): string {
+  if (isDir || showExtensions) return name;
+  const dotIndex = name.lastIndexOf(".");
+  // Ignore leading dots (e.g. ".gitignore" has no extension to hide)
+  if (dotIndex <= 0) return name;
+  return name.slice(0, dotIndex);
+}

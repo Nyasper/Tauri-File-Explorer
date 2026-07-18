@@ -3,7 +3,8 @@
   import type { FileEntry } from '../types/explorer.types';
   import { explorerState } from '../state/explorer.state.svelte';
   import { contextMenu, type ContextMenuItem } from '$lib/services/context-menu.service.svelte';
-  import { formatBytes } from '$lib/utils/formater';
+  import { configService } from '$lib/services/config.service.svelte';
+  import { formatBytes, formatDisplayName } from '$lib/utils/formater';
   import { iconOpen, iconRename, iconCopy, iconCut, iconPaste, iconDelete, iconFolderPlus, iconFilePlus, iconRefresh } from './shared/icons';
 
   // Svelte 5 Props using runes
@@ -259,7 +260,7 @@
                     {/if}
                   </div>
                 {/if}
-                <span class="entry-name" title={entry.name}>{entry.name}</span>
+                <span class="entry-name" title={entry.name}>{formatDisplayName(entry.name, entry.is_dir, configService.config.showExtensions)}</span>
               </div>
             </td>
 

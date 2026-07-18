@@ -3,6 +3,8 @@
   import type { FileEntry } from '../types/explorer.types';
   import { explorerState } from '../state/explorer.state.svelte';
   import { contextMenu, type ContextMenuItem } from '$lib/services/context-menu.service.svelte';
+  import { configService } from '$lib/services/config.service.svelte';
+  import { formatDisplayName } from '$lib/utils/formater';
   import { iconOpen, iconRename, iconCopy, iconCut, iconPaste, iconDelete, iconFolderPlus, iconFilePlus, iconRefresh } from './shared/icons';
 
   // Svelte 5 Props using runes
@@ -226,13 +228,13 @@
 
             {#if category === 'image'}
               <img class="grid-thumb" src={convertFileSrc(entry.path)} alt={entry.name} onerror={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
-            {:else if category !== 'folder' && category !== 'code'}
+            {:else if category !== 'folder' && category !== 'code' && configService.config.showExtensions}
               <!-- Smaller overlay icon/letter for recognition -->
               <span class="ext-badge">{entry.extension || 'file'}</span>
             {/if}
           </div>
 
-          <span class="item-name">{entry.name}</span>
+          <span class="item-name">{formatDisplayName(entry.name, entry.is_dir, configService.config.showExtensions)}</span>
         </div>
       {/each}
     </div>
