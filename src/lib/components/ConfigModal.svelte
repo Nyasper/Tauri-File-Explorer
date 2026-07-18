@@ -1,7 +1,7 @@
 <script lang="ts">
   import Modal from './shared/Modal.svelte';
   import { configService } from '$lib/services/config.service.svelte';
-  import type { Theme, ViewMode, StartupMode, OpenMode, Lang, AccentColor } from '$lib/types/application.config.types';
+  import type { Theme, ViewMode, StartupMode, OpenMode, AccentColor } from '$lib/types/application.config.types';
   import { fade, crossfade } from 'svelte/transition';
   import { cubicInOut } from 'svelte/easing';
 
@@ -103,34 +103,6 @@
                       class="active-indicator" 
                       in:receive={{ key: 'onStartup' }}
                       out:send={{ key: 'onStartup' }}
-                    ></div>
-                  {/if}
-                  <span class="btn-label">{opt.label}</span>
-                </button>
-              {/each}
-            </div>
-          </div>
-
-          <div class="setting-item">
-            <div class="setting-info">
-              <span class="setting-label">Language</span>
-              <span class="setting-desc">Select UI language.</span>
-            </div>
-            <div class="option-switcher">
-              {#each [
-                { value: 'en', label: 'English' },
-                { value: 'es', label: 'Español' }
-              ] as opt}
-                <button 
-                  class="switcher-btn" 
-                  class:active={configService.config.language === opt.value} 
-                  onclick={() => configService.config.language = opt.value as Lang}
-                >
-                  {#if configService.config.language === opt.value}
-                    <div 
-                      class="active-indicator" 
-                      in:receive={{ key: 'language' }}
-                      out:send={{ key: 'language' }}
                     ></div>
                   {/if}
                   <span class="btn-label">{opt.label}</span>

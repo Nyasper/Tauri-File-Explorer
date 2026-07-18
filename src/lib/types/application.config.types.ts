@@ -4,7 +4,6 @@ export type SortOrder = "asc" | "desc";
 export type SortBy = "name" | "size" | "type" | "date";
 export type Theme = "system" | "light" | "dark";
 export type OpenMode = "singleClick" | "doubleClick";
-export type Lang = "en" | "es";
 export type AccentColor =
   | "#eab308"
   | "#10b981"
@@ -31,6 +30,5 @@ export interface ApplicationConfig {
   confirmDelete: boolean;
   openMode: OpenMode;
   showSidebar: boolean;
-  language: Lang;
   defaultAccentColor: AccentColor;
 }

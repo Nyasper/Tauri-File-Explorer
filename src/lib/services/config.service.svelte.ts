@@ -20,7 +20,6 @@ export class ConfigService {
     confirmDelete: true,
     openMode: "doubleClick",
     showSidebar: true,
-    language: "en",
     defaultAccentColor: "#3b82f6",
   });
 
@@ -67,7 +66,6 @@ export class ConfigService {
               confirmDelete: this.config.confirmDelete,
               openMode: this.config.openMode,
               showSidebar: this.config.showSidebar,
-              language: this.config.language,
               defaultAccentColor: this.config.defaultAccentColor,
             };
             void _;
