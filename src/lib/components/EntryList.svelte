@@ -60,7 +60,7 @@
         icon: iconOpen,
         shortcut: 'Enter',
         disabled: !isSingle,
-        action: () => handleDoubleClick(entry)
+        action: () => openEntry(entry)
       },
       {
         label: 'Rename',
@@ -163,8 +163,8 @@
     return imageExtensions.includes((entry.extension || '').toLowerCase());
   }
 
-  // Double click handler
-  function handleDoubleClick(entry: FileEntry) {
+  // Open an entry: navigate into folders, open files with the system handler
+  function openEntry(entry: FileEntry) {
     if (entry.is_dir) {
       onNavigate(entry.path);
     } else {
@@ -172,11 +172,24 @@
     }
   }
 
+  // Double click handler (no-op in single-click mode: the click already opened it)
+  function handleDoubleClick(entry: FileEntry) {
+    if (configService.config.openMode === 'singleClick') return;
+    openEntry(entry);
+  }
+
   // Row selection handler
   function handleRowClick(e: MouseEvent, entry: FileEntry) {
     e.stopPropagation();
     // Check if Ctrl or Shift is held down for multi-selection
     const isMulti = e.ctrlKey || e.metaKey || e.shiftKey;
+
+    // Single-click mode: plain click opens the entry; modified clicks keep selecting
+    if (configService.config.openMode === 'singleClick' && !isMulti) {
+      openEntry(entry);
+      return;
+    }
+
     explorerState.toggleSelection(explorerState.activeTabId, paneSide, entry.path, isMulti);
   }
 
