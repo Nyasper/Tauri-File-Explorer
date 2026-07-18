@@ -1,5 +1,6 @@
 import { explorerState } from "../state/explorer.state.svelte";
 import { configService } from "./config.service.svelte";
+import { dialogService } from "./dialog.service.svelte";
 
 interface ShortcutItem {
   key: string;
@@ -7,7 +8,7 @@ interface ShortcutItem {
   category: string;
 }
 
-export const globalShorcutsList: ShortcutItem[] = [
+export const globalShortcutsList: ShortcutItem[] = [
   { key: "Esc", action: "Close Modal Window", category: "System" },
   { key: "F1", action: "Toggle Help Modal Window", category: "System" },
   {
@@ -165,8 +166,15 @@ export function useKeybindingService() {
         return;
       }
 
-      // 6. Esc -> Close Modal Window
+      // 6. Esc -> Close Modal Window (global dialogs take priority)
       if (e.key === "Escape") {
+        if (dialogService.isOpen) {
+          e.preventDefault();
+          e.stopPropagation();
+          console.debug("Esc Dialog shortcut pressed");
+          dialogService.cancel();
+          return;
+        }
         if (!explorerState.isHelpModalOpen && !explorerState.isConfigModalOpen)
           return;
         e.preventDefault();

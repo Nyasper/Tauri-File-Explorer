@@ -1,6 +1,6 @@
 <script lang="ts">
   import Modal from './shared/Modal.svelte';
-  import { globalShorcutsList } from '$lib/services/keybinding.service.svelte';
+  import { globalShortcutsList } from '$lib/services/keybinding.service.svelte';
   let { isModalOpen = $bindable(false) } = $props();
 </script>
 
@@ -9,8 +9,8 @@
   <section class="section">
     <h3>Keyboard Shortcuts</h3>
     <div class="shortcuts-grid">
-      {#each globalShorcutsList as shortcut, i (shortcut.key)}
-        {#if i === 0 || shortcut.category !== globalShorcutsList[i - 1].category}
+      {#each globalShortcutsList as shortcut, i (shortcut.key)}
+        {#if i === 0 || shortcut.category !== globalShortcutsList[i - 1].category}
           {#if i > 0}
             <div class="category-separator"></div>
           {/if}

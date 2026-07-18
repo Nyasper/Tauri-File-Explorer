@@ -4,6 +4,7 @@
   import SidebarItem from './SidebarItem.svelte';
   import * as explorerApi from '../explorer.api';
   import { normalizePath } from '../utils/path.helper';
+  import { dialogService } from '../services/dialog.service.svelte';
 
   // Watch active directory path or sidebar initialization to auto-expand
   $effect(() => {
@@ -22,7 +23,7 @@
         recyclePath
       );
     } catch (err) {
-      alert(`Could not open Recycle Bin: ${err}`);
+      await dialogService.alert(`Could not open Recycle Bin: ${err}`);
     }
   }
 
@@ -30,7 +31,12 @@
 
   async function handleEmptyRecycleBin(e: MouseEvent) {
     e.stopPropagation();
-    if (!confirm('Empty the Recycle Bin?')) return;
+    const confirmed = await dialogService.confirm('Empty the Recycle Bin?', {
+      title: 'Empty Recycle Bin',
+      confirmLabel: 'Empty',
+      danger: true
+    });
+    if (!confirmed) return;
     if (isRecycleBinBusy) return;
     isRecycleBinBusy = true;
     try {
@@ -47,7 +53,7 @@
         }
       }
     } catch (err) {
-      alert(`Could not empty Recycle Bin: ${err}`);
+      await dialogService.alert(`Could not empty Recycle Bin: ${err}`);
     } finally {
       isRecycleBinBusy = false;
     }
@@ -72,7 +78,7 @@
     // Ignore root levels
     if (!oldName) return;
 
-    const newName = prompt('Enter new name:', oldName);
+    const newName = await dialogService.prompt('Enter new name:', oldName, 'Rename');
     if (!newName || !newName.trim() || newName.trim() === oldName) return;
 
     const parentDir = sidebarState.getParentPath(activePath);
@@ -93,7 +99,7 @@
       await sidebarState.refreshPath(activePath);
       await explorerState.refresh(explorerState.activeTab.id, explorerState.activePaneSide);
     } catch (err) {
-      alert(`Error renaming folder: ${err}`);
+      await dialogService.alert(`Error renaming folder: ${err}`);
     }
   }
 </script>

@@ -10,6 +10,7 @@
   import { SvelteSet } from 'svelte/reactivity';
   import Sidebar from './Sidebar.svelte';
   import { configService } from '../services/config.service.svelte';
+  import { dialogService } from '../services/dialog.service.svelte';
 
 
 
@@ -23,6 +24,11 @@
 
         // Ignore if help or config modal is open (let the keybinding service close them first)
         if (explorerState.isHelpModalOpen || explorerState.isConfigModalOpen) {
+          return;
+        }
+
+        // Ignore while a global dialog is open (the dialog handles Escape itself)
+        if (dialogService.isOpen) {
           return;
         }
 
@@ -55,6 +61,20 @@
   let primarySearchVal = $state('');
   let secondarySearchVal = $state('');
 
+  // Svelte 5 Derived views of active tab details
+  const activeTab = $derived(explorerState.activeTab);
+  const splitActive = $derived(!!activeTab?.splitView);
+
+  // Selected items state per pane derived from active tab
+  const primarySelected = $derived(activeTab.selectedPaths);
+  const secondarySelected = $derived(activeTab.splitView ? activeTab.splitView.selectedPaths : new SvelteSet<string>());
+
+  // Svelte 5 Derived total sizes of paths
+  const currentPathTotalSize = $derived(activeTab ? activeTab.files.reduce((acc, f) => acc + (f.size || 0), 0) : 0);
+
+  // For Splitted View
+  const secondaryTotalSize = $derived((activeTab && activeTab.splitView) ? activeTab.splitView.files.reduce((acc, f) => acc + (f.size || 0), 0) : 0);
+
   // Local buffers for the path inputs so that typing into them doesn't
   // mutate pane.currentPath live (which would break the breadcrumb and
   // other deriveds while the user is still editing). We commit the value
@@ -72,20 +92,6 @@
     const sv = activeTab?.splitView;
     if (sv) secondaryPathVal = sv.currentPath;
   });
-
-  // Svelte 5 Derived views of active tab details
-  const activeTab = $derived(explorerState.activeTab);
-  const splitActive = $derived(!!activeTab?.splitView);
-
-  // Selected items state per pane derived from active tab
-  const primarySelected = $derived(activeTab.selectedPaths);
-  const secondarySelected = $derived(activeTab.splitView ? activeTab.splitView.selectedPaths : new SvelteSet<string>());
-
-  // Svelte 5 Derived total sizes of paths
-  const currentPathTotalSize = $derived(activeTab ? activeTab.files.reduce((acc, f) => acc + (f.size || 0), 0) : 0);
-
-  // For Splitted View
-  const secondaryTotalSize = $derived((activeTab && activeTab.splitView) ? activeTab.splitView.files.reduce((acc, f) => acc + (f.size || 0), 0) : 0);
 
 
   // Helper to get selection set based on side
@@ -119,7 +125,7 @@
     try {
       await explorerApi.openFile(path);
     } catch (err) {
-      alert(`Could not open file: ${err}`);
+      await dialogService.alert(`Could not open file: ${err}`);
     }
   }
 
@@ -146,7 +152,7 @@
   // File Operations: Create Folder
   async function createFolder(side: 'primary' | 'secondary') {
     const { pane } = getPaneDetails(side);
-    const folderName = prompt('Enter new folder name:');
+    const folderName = await dialogService.prompt('Enter new folder name:', '', 'New Folder');
     if (!folderName || !folderName.trim()) return;
 
     const separator = pane.currentPath.endsWith('/') || pane.currentPath.endsWith('\\') ? '' : '/';
@@ -156,14 +162,14 @@
       await explorerApi.createFile(targetPath, true);
       await explorerState.refresh(activeTab.id, side);
     } catch (err) {
-      alert(`Error creating folder: ${err}`);
+      await dialogService.alert(`Error creating folder: ${err}`);
     }
   }
 
   // File Operations: Create File
   async function createNewFile(side: 'primary' | 'secondary') {
     const { pane } = getPaneDetails(side);
-    const fileName = prompt('Enter new file name:');
+    const fileName = await dialogService.prompt('Enter new file name:', '', 'New File');
     if (!fileName || !fileName.trim()) return;
 
     const separator = pane.currentPath.endsWith('/') || pane.currentPath.endsWith('\\') ? '' : '/';
@@ -173,7 +179,7 @@
       await explorerApi.createFile(targetPath, false);
       await explorerState.refresh(activeTab.id, side);
     } catch (err) {
-      alert(`Error creating file: ${err}`);
+      await dialogService.alert(`Error creating file: ${err}`);
     }
   }
 
@@ -185,7 +191,7 @@
     const oldPath = Array.from(selected)[0];
     const oldName = oldPath.substring(Math.max(oldPath.lastIndexOf('/'), oldPath.lastIndexOf('\\')) + 1);
 
-    const newName = prompt('Enter new name:', oldName);
+    const newName = await dialogService.prompt('Enter new name:', oldName, 'Rename');
     if (!newName || !newName.trim() || newName.trim() === oldName) return;
 
     const parentDir = oldPath.substring(0, oldPath.length - oldName.length);
@@ -196,7 +202,7 @@
       selected.clear();
       await explorerState.refresh(activeTab.id, side);
     } catch (err) {
-      alert(`Error renaming file: ${err}`);
+      await dialogService.alert(`Error renaming file: ${err}`);
     }
   }
 
@@ -205,8 +211,15 @@
     const { selected } = getPaneDetails(side);
     if (selected.size === 0) return;
 
-    const confirmMsg = `Are you sure you want to delete the ${selected.size} selected item(s)?`;
-    if (!confirm(confirmMsg)) return;
+    if (configService.config.confirmDelete) {
+      const confirmMsg = `Are you sure you want to delete the ${selected.size} selected item(s)?`;
+      const confirmed = await dialogService.confirm(confirmMsg, {
+        title: 'Delete Items',
+        confirmLabel: 'Delete',
+        danger: true
+      });
+      if (!confirmed) return;
+    }
 
     try {
       for (const path of selected) {
@@ -215,7 +228,7 @@
       selected.clear();
       await explorerState.refresh(activeTab.id, side);
     } catch (err) {
-      alert(`Error deleting items: ${err}`);
+      await dialogService.alert(`Error deleting items: ${err}`);
     }
   }
 
@@ -263,7 +276,7 @@
 
       await explorerState.refresh(activeTab.id, side);
     } catch (err) {
-      alert(`Error pasting: ${err}`);
+      await dialogService.alert(`Error pasting: ${err}`);
     }
   }
 

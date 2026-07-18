@@ -27,7 +27,6 @@ pub struct FileEntry {
     pub name: String,
     pub path: String,
     pub is_dir: bool,
-    pub is_file: bool,
     pub size: u64,
     pub modified: u64, // Unix timestamp in milliseconds
     pub readonly: bool,
@@ -169,7 +168,6 @@ async fn build_index_recursive(root: std::path::PathBuf, current_depth: u32, max
                 name,
                 path: path_str,
                 is_dir,
-                is_file: metadata.is_file(),
                 size: metadata.len(),
                 modified,
                 readonly: metadata.permissions().readonly(),
@@ -259,7 +257,6 @@ pub fn list_dir(path: String) -> Result<Vec<FileEntry>, String> {
             name,
             path: path_str,
             is_dir: metadata.is_dir(),
-            is_file: metadata.is_file(),
             size: metadata.len(),
             modified,
             readonly: metadata.permissions().readonly(),
@@ -471,7 +468,6 @@ async fn search_dir_recursive(root: std::path::PathBuf, query_lower: String) -> 
                     name,
                     path: path_str,
                     is_dir: metadata.is_dir(),
-                    is_file: metadata.is_file(),
                     size: metadata.len(),
                     modified,
                     readonly: metadata.permissions().readonly(),
@@ -669,9 +665,12 @@ pub fn get_recycle_bin_path() -> Result<String, String> {
         if path.exists() {
             return Ok(recycle_path.to_string());
         }
-        // Fallback: try the user's recycle bin
-        if let Ok(user_profile) = std::env::var("USERPROFILE") {
-            return Ok(user_profile);
+        // Fallback: try each drive's recycle bin
+        for c in b'A'..=b'Z' {
+            let drive_recycle = format!("{}:\\$Recycle.Bin", c as char);
+            if std::path::Path::new(&drive_recycle).exists() {
+                return Ok(drive_recycle);
+            }
         }
         Err("Could not find Recycle Bin path".to_string())
     }

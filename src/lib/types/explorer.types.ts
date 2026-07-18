@@ -4,9 +4,7 @@ export interface FileEntry {
   name: string;
   path: string;
   is_dir: boolean;
-  is_file: boolean;
   size: number; // Bytes, or folder size once calculated
-  is_size_loading?: boolean;
   modified: number; // Unix timestamp in milliseconds
   readonly: boolean;
   permissions?: string;

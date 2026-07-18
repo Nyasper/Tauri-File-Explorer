@@ -1,8 +1,14 @@
 <script lang="ts">
   import '../app.css';
   import ContextMenu from '$lib/components/ContextMenu.svelte';
+  import { configService } from '$lib/services/config.service.svelte';
 
   let { children } = $props();
+
+  // Keep the HTML lang attribute in sync with config
+  $effect(() => {
+    document.documentElement.lang = configService.config.language;
+  });
 
   // Disable default browser context menu globally
   $effect(() => {

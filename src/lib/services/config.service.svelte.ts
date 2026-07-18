@@ -52,23 +52,25 @@ export class ConfigService {
 
         $effect(() => {
           if (this.configInitialized) {
-            // Touch each top-level field so $effect tracks them, then
-            // persist the whole config.
-            void this.config.defaultTheme;
-            void this.config.defaultPath;
-            void this.config.onStartup;
-            void this.config.defaultViewMode;
-            void this.config.sort.by;
-            void this.config.sort.order;
-            void this.config.rememberHistory;
-            void this.config.rememberRecents;
-            void this.config.showHiddenFiles;
-            void this.config.showExtensions;
-            void this.config.confirmDelete;
-            void this.config.openMode;
-            void this.config.showSidebar;
-            void this.config.language;
-            void this.config.defaultAccentColor;
+            // Track all config fields for auto-save, then persist.
+            const _ = {
+              defaultTheme: this.config.defaultTheme,
+              defaultPath: this.config.defaultPath,
+              onStartup: this.config.onStartup,
+              defaultViewMode: this.config.defaultViewMode,
+              sortBy: this.config.sort.by,
+              sortOrder: this.config.sort.order,
+              rememberHistory: this.config.rememberHistory,
+              rememberRecents: this.config.rememberRecents,
+              showHiddenFiles: this.config.showHiddenFiles,
+              showExtensions: this.config.showExtensions,
+              confirmDelete: this.config.confirmDelete,
+              openMode: this.config.openMode,
+              showSidebar: this.config.showSidebar,
+              language: this.config.language,
+              defaultAccentColor: this.config.defaultAccentColor,
+            };
+            void _;
             this.updateConfig(this.config);
           }
         });

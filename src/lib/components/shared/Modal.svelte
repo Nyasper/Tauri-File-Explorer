@@ -6,6 +6,8 @@
     isOpen?: boolean;
     title: string;
     icon?: Snippet;
+    /** 'default' keeps the large settings/help layout; 'compact' is a small dialog box. */
+    size?: 'default' | 'compact';
     children?: Snippet;
   }
 
@@ -13,6 +15,7 @@
     isOpen = $bindable(false),
     title,
     icon,
+    size = 'default',
     children
   }: Props = $props();
 
@@ -33,7 +36,7 @@
   <div class="modal-overlay" onclick={handleClickOutside} transition:fade={{ duration: 220 }}>
     <!-- svelte-ignore a11y_click_events_have_key_events -->
     <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <div class="modal-container" onclick={(e) => e.stopPropagation()}>
+    <div class="modal-container" class:compact={size === 'compact'} onclick={(e) => e.stopPropagation()}>
       <div class="modal-header">
         <div class="modal-title">
           {#if icon}
@@ -88,6 +91,20 @@
     display: flex;
     flex-direction: column;
     animation: scaleUp var(--transition-normal) cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  /* Compact variant for small dialogs (alert / confirm / prompt) */
+  .modal-container.compact {
+    width: 90vw;
+    min-width: 340px;
+    max-width: 440px;
+    height: auto;
+    min-height: 0;
+    max-height: 80vh;
+  }
+
+  .modal-container.compact .modal-content {
+    padding: 16px 20px 20px 20px;
   }
 
   .modal-header {
