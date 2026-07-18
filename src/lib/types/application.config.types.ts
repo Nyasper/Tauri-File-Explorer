@@ -23,7 +23,6 @@ export interface ApplicationConfig {
     by: SortBy;
     order: SortOrder;
   };
-  rememberHistory: boolean;
   rememberRecents: boolean;
   showHiddenFiles: boolean;
   showExtensions: boolean;

@@ -277,17 +277,6 @@
 
           <div class="setting-item">
             <div class="setting-info">
-              <span class="setting-label">Remember History</span>
-              <span class="setting-desc">Keep track of back/forward navigation history.</span>
-            </div>
-            <label class="switch">
-              <input type="checkbox" bind:checked={configService.config.rememberHistory} />
-              <span class="slider"></span>
-            </label>
-          </div>
-
-          <div class="setting-item">
-            <div class="setting-info">
               <span class="setting-label">Remember Recent Folders</span>
               <span class="setting-desc">Show recently visited paths in side bar.</span>
             </div>
