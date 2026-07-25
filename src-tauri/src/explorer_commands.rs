@@ -422,9 +422,9 @@ pub async fn search_index(query: String, root_path: String) -> Result<Vec<FileEn
         if let Some(entries) = index.get(&root_path) {
             let matches: Vec<FileEntry> = entries
                 .iter()
+                .take(500)
                 .filter(|entry| entry.name.to_lowercase().contains(&query_lower))
                 .cloned()
-                .take(500)
                 .collect();
             if !matches.is_empty() {
                 return Ok(matches);
@@ -542,28 +542,26 @@ pub struct SystemPathEntry {
 
 fn has_subfolders_helper(path: &std::path::Path) -> bool {
     if let Ok(entries) = std::fs::read_dir(path) {
-        for entry in entries {
-            if let Ok(entry) = entry {
-                let name = entry.file_name().to_string_lossy().to_string();
-                if name.starts_with('.') {
-                    continue; // Ignore hidden files/folders starting with dot
-                }
-                #[cfg(windows)]
-                {
-                    use std::os::windows::fs::MetadataExt;
-                    if let Ok(metadata) = entry.metadata() {
-                        if (metadata.file_attributes() & 0x2) != 0 { // FILE_ATTRIBUTE_HIDDEN
-                            continue;
-                        }
-                    }
-                }
-                // Only count sub-directories: plain files shouldn't trigger the
-                // "has_subfolders" chevron (the field is used to decide if a
-                // sidebar node is expandable).
+        for entry in entries.flatten() {
+            let name = entry.file_name().to_string_lossy().to_string();
+            if name.starts_with('.') {
+                continue; // Ignore hidden files/folders starting with dot
+            }
+            #[cfg(windows)]
+            {
+                use std::os::windows::fs::MetadataExt;
                 if let Ok(metadata) = entry.metadata() {
-                    if metadata.is_dir() {
-                        return true;
+                    if (metadata.file_attributes() & 0x2) != 0 { // FILE_ATTRIBUTE_HIDDEN
+                        continue;
                     }
+                }
+            }
+            // Only count sub-directories: plain files shouldn't trigger the
+            // "has_subfolders" chevron (the field is used to decide if a
+            // sidebar node is expandable).
+            if let Ok(metadata) = entry.metadata() {
+                if metadata.is_dir() {
+                    return true;
                 }
             }
         }
@@ -622,26 +620,24 @@ pub fn list_sidebar_folders(path: String) -> Result<Vec<SidebarFolder>, String> 
     let entries = fs::read_dir(root).map_err(|e| format!("Failed to read directory: {}", e))?;
     let mut folders = Vec::new();
 
-    for entry in entries {
-        if let Ok(entry) = entry {
-            if let Ok(metadata) = entry.metadata() {
-                if metadata.is_dir() {
-                    let path_str = entry.path().to_string_lossy().to_string();
-                    let name = entry.file_name().to_string_lossy().to_string();
-                    let has_sub = has_subfolders_helper(&entry.path());
-                    
-                    folders.push(SidebarFolder {
-                        name,
-                        path: path_str,
-                        has_subfolders: has_sub,
-                    });
-                }
+    for entry in entries.flatten() {
+        if let Ok(metadata) = entry.metadata() {
+            if metadata.is_dir() {
+                let path_str = entry.path().to_string_lossy().to_string();
+                let name = entry.file_name().to_string_lossy().to_string();
+                let has_sub = has_subfolders_helper(&entry.path());
+
+                folders.push(SidebarFolder {
+                    name,
+                    path: path_str,
+                    has_subfolders: has_sub,
+                });
             }
         }
     }
 
     // Sort alphabetically (case-insensitive)
-    folders.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+    folders.sort_by_key(|a| a.name.to_lowercase());
 
     Ok(folders)
 }
