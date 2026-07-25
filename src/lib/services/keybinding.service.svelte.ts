@@ -58,7 +58,6 @@ export const globalShortcutsList: ShortcutItem[] = [
 ] as const;
 
 export function useKeybindingService() {
-  console.debug("Keyboard Service initialized");
   $effect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const isMac = navigator.userAgent.toLowerCase().includes("mac");
@@ -71,7 +70,6 @@ export function useKeybindingService() {
           e.target instanceof HTMLTextAreaElement
         )
           return;
-        console.debug("New Tab shortcut pressed");
         e.preventDefault();
         e.stopPropagation();
         const currentPath = explorerState.activeTab?.currentPath || "/";
@@ -88,7 +86,6 @@ export function useKeybindingService() {
           return;
         e.preventDefault();
         e.stopPropagation();
-        console.debug("Close Tab shortcut pressed");
         explorerState.closeTab(explorerState.activeTabId);
         return;
       }
@@ -102,7 +99,6 @@ export function useKeybindingService() {
           return;
         e.preventDefault();
         e.stopPropagation();
-        console.debug("Switch Tab shortcut pressed");
         const tabs = explorerState.tabs;
         if (tabs.length <= 1) return;
 
@@ -126,7 +122,6 @@ export function useKeybindingService() {
         (e.altKey && e.key === "ArrowLeft") ||
         (isMac && e.metaKey && e.key === "[")
       ) {
-        console.debug("Go Back shortcut pressed");
         // Skip if user is actively typing in an input or textarea
         if (
           e.target instanceof HTMLInputElement ||
@@ -146,7 +141,6 @@ export function useKeybindingService() {
         (e.altKey && e.key === "ArrowRight") ||
         (isMac && e.metaKey && e.key === "]")
       ) {
-        console.debug("Go Forward shortcut pressed");
         // Skip if user is actively typing in an input or textarea
         if (
           e.target instanceof HTMLInputElement ||
@@ -166,7 +160,6 @@ export function useKeybindingService() {
       if (e.key === "F1") {
         e.preventDefault();
         e.stopPropagation();
-        console.debug("F1 Help shortcut pressed");
         explorerState.isHelpModalOpen = !explorerState.isHelpModalOpen;
         return;
       }
@@ -176,7 +169,6 @@ export function useKeybindingService() {
         if (dialogService.isOpen) {
           e.preventDefault();
           e.stopPropagation();
-          console.debug("Esc Dialog shortcut pressed");
           dialogService.cancel();
           return;
         }
@@ -184,7 +176,6 @@ export function useKeybindingService() {
           return;
         e.preventDefault();
         e.stopPropagation();
-        console.debug("Esc Help/Config shortcut pressed");
         explorerState.isHelpModalOpen = false;
         explorerState.isConfigModalOpen = false;
         return;
@@ -194,7 +185,6 @@ export function useKeybindingService() {
       if (ctrlKey && e.key.toLowerCase() === "o") {
         e.preventDefault();
         e.stopPropagation();
-        console.debug("Ctrl + O shortcut pressed");
         explorerState.isConfigModalOpen = !explorerState.isConfigModalOpen;
         return;
       }
@@ -203,7 +193,6 @@ export function useKeybindingService() {
       if (ctrlKey && e.key.toLowerCase() === "b") {
         e.preventDefault();
         e.stopPropagation();
-        console.debug("Ctrl + B shortcut pressed");
         configService.config.showSidebar = !configService.config.showSidebar;
         return;
       }
@@ -218,7 +207,6 @@ export function useKeybindingService() {
           return;
         e.preventDefault();
         e.stopPropagation();
-        console.debug("Ctrl + H shortcut pressed");
         configService.config.showHiddenFiles =
           !configService.config.showHiddenFiles;
         return;
@@ -230,7 +218,6 @@ export function useKeybindingService() {
       if (e.button === 3) {
         e.preventDefault();
         e.stopPropagation();
-        console.debug("Mouse button 3 pressed");
         explorerState.goBack(
           explorerState.activeTabId,
           explorerState.activePaneSide,
@@ -238,7 +225,6 @@ export function useKeybindingService() {
       } else if (e.button === 4) {
         e.preventDefault();
         e.stopPropagation();
-        console.debug("Mouse button 4 pressed");
         explorerState.goForward(
           explorerState.activeTabId,
           explorerState.activePaneSide,
@@ -264,7 +250,6 @@ export function useKeybindingService() {
       window.removeEventListener("mousedown", handleMouseDown, {
         capture: true,
       });
-      console.debug("Keyboard Service destroyed");
     };
   });
 }
