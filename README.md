@@ -117,9 +117,9 @@ bun run tauri:build
 
 The bundler produces platform-native installers in `src-tauri/target/release/bundle/`:
 
-- **Windows**: `.msi` and `.exe`
+- **Windows**: `.msi` (WiX, clean uninstall via Windows Installer)
 - **macOS**: `.dmg` and `.app`
-- **Linux**: `.deb`, `.AppImage`, `.rpm`
+- **Linux**: `.deb`, `.rpm`, `.AppImage`
 
 ## Configuration
 

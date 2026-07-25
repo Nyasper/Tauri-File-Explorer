@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.0] - 2026-07-25
 
 ### Added
+- `.rpm` bundle target for Red Hat, Fedora, openSUSE, and other RPM-based Linux distros
+- `.msi` (WiX) is the sole Windows installer; chosen for its clean install/uninstall via Windows Installer service
+- `.deb` (Debian / Ubuntu), `.AppImage` (universal Linux), `.dmg` + `.app` (macOS)
+
+### Removed
+- `.exe` (NSIS) Windows installer: dropped in favor of MSI for cleaner uninstall and proper Programs and Features integration
+
+### Added
 - Multi-tab browsing with full back/forward history per tab
 - Split-pane view (two independent panes in the same tab)
 - Indexed recursive search with background indexing
