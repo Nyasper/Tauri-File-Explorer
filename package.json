@@ -1,7 +1,7 @@
 {
   "name": "tauri-svelte-file-explorer",
-  "version": "0.1.0",
-  "description": "",
+  "version": "1.0.0",
+  "description": "Cross-platform desktop file explorer built with Tauri v2 and Svelte 5.",
   "type": "module",
   "scripts": {
     "dev": "vite dev",
