@@ -33,7 +33,16 @@
 </script>
 
 {#if isOpen}
-  <div class="modal-overlay" onclick={handleClickOutside} transition:fade={{ duration: 220 }}>
+  <div
+    class="modal-overlay"
+    role="dialog"
+    aria-modal="true"
+    aria-label={title}
+    tabindex="-1"
+    onclick={handleClickOutside}
+    onkeydown={(e) => { if (e.key === 'Escape') closeModal(); }}
+    transition:fade={{ duration: 220 }}
+  >
     <!-- svelte-ignore a11y_click_events_have_key_events -->
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div class="modal-container" class:compact={size === 'compact'} onclick={(e) => e.stopPropagation()}>

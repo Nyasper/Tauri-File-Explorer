@@ -6,6 +6,7 @@
   import EntryGrid from './EntryGrid.svelte';
   import { formatBytes } from '$lib/utils/formater';
   import { getParentPath } from '$lib/utils/path.helper';
+  import { untrack } from 'svelte';
   import { fade } from 'svelte/transition';
   import { SvelteSet } from 'svelte/reactivity';
   import Sidebar from './Sidebar.svelte';
@@ -80,8 +81,8 @@
   // mutate pane.currentPath live (which would break the breadcrumb and
   // other deriveds while the user is still editing). We commit the value
   // only when the form is submitted.
-  let primaryPathVal = $state(activeTab?.currentPath ?? '');
-  let secondaryPathVal = $state(activeTab.splitView?.currentPath ?? '');
+  let primaryPathVal = $state(untrack(() => activeTab?.currentPath ?? ''));
+  let secondaryPathVal = $state(untrack(() => activeTab.splitView?.currentPath ?? ''));
 
   // Keep the local buffers in sync when navigation happens through other
   // means (history buttons, sidebar clicks, goUp, goBack, ...).
