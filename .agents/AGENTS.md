@@ -61,9 +61,7 @@ export interface FileEntry {
   name: string;
   path: string;
   is_dir: boolean;
-  is_file: boolean;
-  size: number; // Bytes, or folder size if computed
-  is_size_loading?: boolean;
+  size: number; // Bytes
   modified: number; // Timestamp (Unix millis)
   readonly: boolean;
   permissions?: string; // Unix-style or Windows representation
@@ -211,7 +209,12 @@ Tauri must handle file system operations, heavy CPU operations, and multi-thread
 - `copy_file(src: String, dest: String) -> Result<(), String>`
 - `move_file(src: String, dest: String) -> Result<(), String>`
 - `search_index(query: String, root_path: String) -> Result<Vec<FileEntry>, String>`
-- `calculate_folder_size(path: String) -> Result<u64, String>` (should run in background and emit updates via events or channel)
+- `get_home_dir() -> Result<String, String>`
+- `get_system_paths() -> Result<Vec<SystemPathEntry>, String>`
+- `list_sidebar_folders(path: String) -> Result<Vec<SidebarFolder>, String>`
+- `get_system_drives() -> Result<Vec<DriveEntry>, String>`
+- `get_recycle_bin_path() -> Result<String, String>`
+- `empty_recycle_bin() -> Result<(), String>`
 
 ---
 
