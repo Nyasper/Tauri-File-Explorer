@@ -161,7 +161,6 @@ export class ConfigService {
 
   private applyTheme(theme: "dark" | "light") {
     document.documentElement.setAttribute("data-theme", theme);
-    localStorage.setItem("theme", theme);
   }
 
   private hexToRgb(hex: string) {
