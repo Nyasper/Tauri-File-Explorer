@@ -12,9 +12,14 @@
   "app": {
     "windows": [
       {
-        "title": "tauri-svelte-file-explorer",
-        "width": 800,
-        "height": 600
+        "title": "Tauri File Explorer",
+        "width": 1200,
+        "height": 800,
+        "minWidth": 800,
+        "minHeight": 500,
+        "resizable": true,
+        "fullscreen": false,
+        "center": true
       }
     ],
     "security": {
@@ -28,6 +33,9 @@
   "bundle": {
     "active": true,
     "targets": "all",
+    "category": "Utility",
+    "shortDescription": "Cross-platform desktop file explorer built with Tauri v2 and Svelte 5.",
+    "longDescription": "A high-performance, cross-platform native file explorer for Windows, macOS, and Linux. Features multi-tab navigation, split-pane views, indexed search, session restoration, and a polished glassmorphic dark/light UI.",
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
