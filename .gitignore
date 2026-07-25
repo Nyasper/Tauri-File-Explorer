@@ -45,7 +45,6 @@ vite.config.ts.timestamp-*
 /src-tauri/gen/schemas/
 /src-tauri/WixTools/
 /src-tauri/.cmake/
-/src-tauri/Cargo.lock
 /src-tauri/tauri.conf.json.merge
 
 # ---------- Testing / Coverage ----------

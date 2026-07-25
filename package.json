@@ -1,7 +1,7 @@
 {
   "name": "tauri-svelte-file-explorer",
-  "version": "0.1.0",
-  "description": "",
+  "version": "1.0.0",
+  "description": "Cross-platform desktop file explorer built with Tauri v2 and Svelte 5.",
   "type": "module",
   "scripts": {
     "dev": "vite dev",
@@ -9,21 +9,25 @@
     "preview": "vite preview",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
-    "tauri": "tauri"
+    "typecheck": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --threshold error",
+    "tauri": "tauri",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build"
   },
   "license": "MIT",
   "dependencies": {
     "@tauri-apps/api": "^2",
-    "@tauri-apps/plugin-opener": "^2"
+    "@tauri-apps/plugin-opener": "^2",
+    "@tauri-apps/plugin-store": "^2.4.3"
   },
   "devDependencies": {
     "@sveltejs/adapter-static": "^3.0.6",
-    "@sveltejs/kit": "^2.9.0",
-    "@sveltejs/vite-plugin-svelte": "^7.1.2",
+    "@sveltejs/kit": "^2.69.2",
+    "@sveltejs/vite-plugin-svelte": "^7.2.0",
     "svelte": "^5.0.0",
-    "svelte-check": "^4.0.0",
-    "typescript": "~6.0.3",
-    "vite": "^8.1.3",
+    "svelte-check": "^4.7.2",
+    "typescript": "^6.0.3",
+    "vite": "^8.1.4",
     "@tauri-apps/cli": "^2"
   }
 }
