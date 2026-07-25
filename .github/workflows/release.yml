@@ -54,7 +54,6 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version: 22
-          cache: bun
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
