@@ -412,15 +412,10 @@
     flex-direction: column;
     align-items: center;
     gap: 4px;
-    padding: 10px 16px;
-    background-color: var(--bg-tertiary);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-md);
+    padding: 6px 12px;
     color: var(--text-secondary);
   }
   .footer-action-btn:hover {
-    border-color: rgba(var(--accent-rgb), 0.45);
-    background-color: var(--bg-hover);
     color: var(--text-primary);
   }
   .footer-action-btn svg { color: var(--text-muted); }
