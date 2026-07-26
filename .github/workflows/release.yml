@@ -78,7 +78,48 @@ jobs:
           tagName: ${{ github.ref_name }}
           releaseName: ${{ github.ref_name }}
           releaseBody: |
-            See the [CHANGELOG](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for the full list of changes in this release.
+            See the [CHANGELOG](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/CHANGELOG.md) for the full list of changes in this release.
           releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }}
+
+      - name: Create portable .zip (Windows)
+        if: matrix.platform == 'windows-latest'
+        shell: pwsh
+        run: |
+          $version = "${{ github.ref_name }}" -replace '^v', ''
+          $exe = Get-ChildItem -Path "src-tauri/target/release" -Filter "tauri-svelte-file-explorer.exe" -ErrorAction SilentlyContinue | Select-Object -First 1
+          if (-not $exe) { Write-Error "Executable not found"; exit 1 }
+
+          $stage = "portable-stage"
+          New-Item -ItemType Directory -Force -Path $stage | Out-Null
+          Copy-Item $exe.FullName -Destination "$stage/Tauri File Explorer.exe"
+
+          @"
+          Tauri File Explorer v$version - Portable
+          =====================================
+
+          Requirements:
+            - Windows 10 (1803 or later) or Windows 11
+            - WebView2 Runtime (preinstalled on most systems)
+
+          How to run:
+            1. Extract this zip to any folder
+            2. Double-click "Tauri File Explorer.exe"
+          "@ | Out-File -FilePath "$stage/README.txt" -Encoding utf8
+
+          $zipPath = "src-tauri/target/release/bundle/portable/Tauri-File-Explorer_${version}_x64_portable.zip"
+          New-Item -ItemType Directory -Force -Path (Split-Path $zipPath) | Out-Null
+          Compress-Archive -Path "$stage/*" -DestinationPath $zipPath
+          Remove-Item -Recurse -Force $stage
+          Write-Host "Created: $zipPath"
+
+      - name: Upload portable .zip to release
+        if: matrix.platform == 'windows-latest'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          files: src-tauri/target/release/bundle/portable/*.zip
+          fail_on_unmatched_files: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
