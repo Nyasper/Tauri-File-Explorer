@@ -29,6 +29,7 @@ export class ExplorerState {
   activePaneSide: "primary" | "secondary" = $state("primary"); // Tracks active pane in split-view
   isHelpModalOpen = $state(false);
   isConfigModalOpen = $state(false);
+  isWelcomeOpen = $state(false);
   #activeTab: Tab = $derived(
     this.tabs.find((t) => t.id === this.activeTabId) || this.tabs[0],
   );
@@ -48,7 +49,8 @@ export class ExplorerState {
 
   // Resolve the initial path from the onStartup mode. "custom" uses the
   // configured defaultPath; "last-session" is handled separately by
-  // tryRestoreSession and falls back to "/" here.
+  // tryRestoreSession and "welcome" keeps tabs at the root path, both
+  // falling back to "/" here.
   private async resolveStartupPath(): Promise<string> {
     switch (configService.config.onStartup) {
       case "home":
@@ -66,6 +68,7 @@ export class ExplorerState {
         return custom === "root" || !custom.trim() ? "/" : custom;
       }
       case "last-session": // handled by tryRestoreSession; fallback when it fails
+      case "welcome": // welcome overlay keeps the initial tabs at root
       case "root":
       default:
         return "/";
@@ -99,6 +102,13 @@ export class ExplorerState {
               this.sessionReady = true;
               return;
             }
+          }
+
+          // "welcome" mode shows the welcome screen overlay on launch;
+          // the initial tabs stay at the root path (the default fallback
+          // of resolveStartupPath) until the user picks a destination.
+          if (configService.config.onStartup === "welcome") {
+            this.isWelcomeOpen = true;
           }
 
           const startupPath = await this.resolveStartupPath();

@@ -132,7 +132,21 @@
     <HelpModal bind:isModalOpen={explorerState.isHelpModalOpen} />
     <!-- Settings Modal -->
     <ConfigModal bind:isModalOpen={explorerState.isConfigModalOpen} />
-    
+
+    <!-- Welcome Screen Button -->
+    <button
+      class="tab-action-btn welcome-btn"
+      class:active={explorerState.isWelcomeOpen}
+      title="Welcome Screen (Ctrl+N)"
+      aria-label="Welcome Screen"
+      onclick={() => explorerState.isWelcomeOpen = !explorerState.isWelcomeOpen}
+    >
+      <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+        <polyline points="9 22 9 12 15 12 15 22"></polyline>
+      </svg>
+    </button>
+
     <!-- Toggle Sidebar Button -->
     <button 
       class="tab-action-btn sidebar-toggle-btn" 
@@ -327,6 +341,11 @@
   }
 
   .sidebar-toggle-btn.active {
+    color: var(--accent);
+    background-color: rgba(var(--accent-rgb), 0.1);
+  }
+
+  .welcome-btn.active {
     color: var(--accent);
     background-color: rgba(var(--accent-rgb), 0.1);
   }

@@ -22,6 +22,11 @@ export const globalShortcutsList: ShortcutItem[] = [
     category: "System",
   },
   {
+    key: "Ctrl + N",
+    action: "Toggle Welcome Screen",
+    category: "System",
+  },
+  {
     key: "Ctrl + H",
     action: "Toggle hidden files visibility",
     category: "System",
@@ -172,12 +177,19 @@ export function useKeybindingService() {
           dialogService.cancel();
           return;
         }
-        if (!explorerState.isHelpModalOpen && !explorerState.isConfigModalOpen)
+        if (explorerState.isHelpModalOpen || explorerState.isConfigModalOpen) {
+          e.preventDefault();
+          e.stopPropagation();
+          explorerState.isHelpModalOpen = false;
+          explorerState.isConfigModalOpen = false;
           return;
-        e.preventDefault();
-        e.stopPropagation();
-        explorerState.isHelpModalOpen = false;
-        explorerState.isConfigModalOpen = false;
+        }
+        if (explorerState.isWelcomeOpen) {
+          e.preventDefault();
+          e.stopPropagation();
+          explorerState.isWelcomeOpen = false;
+          return;
+        }
         return;
       }
 
@@ -209,6 +221,20 @@ export function useKeybindingService() {
         e.stopPropagation();
         configService.config.showHiddenFiles =
           !configService.config.showHiddenFiles;
+        return;
+      }
+
+      // 10. Ctrl/Cmd + N -> Toggle Welcome Screen
+      if (ctrlKey && e.key.toLowerCase() === "n") {
+        // Skip if user is actively typing in an input or textarea
+        if (
+          e.target instanceof HTMLInputElement ||
+          e.target instanceof HTMLTextAreaElement
+        )
+          return;
+        e.preventDefault();
+        e.stopPropagation();
+        explorerState.isWelcomeOpen = !explorerState.isWelcomeOpen;
         return;
       }
     };

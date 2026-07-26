@@ -89,6 +89,7 @@
             </div>
             <div class="option-switcher">
               {#each [
+                { value: 'welcome', label: 'Welcome' },
                 { value: 'last-session', label: 'Last Session' },
                 { value: 'root', label: 'Root' },
                 { value: 'home', label: 'Home' },
