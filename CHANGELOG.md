@@ -9,11 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - `.rpm` bundle target for Red Hat, Fedora, openSUSE, and other RPM-based Linux distros
-- `.msi` (WiX) is the sole Windows installer; chosen for its clean install/uninstall via Windows Installer service
+- Windows **portable `.zip`** distribution: extract and run, no installer, no SmartScreen warnings on unsigned binaries
 - `.deb` (Debian / Ubuntu), `.AppImage` (universal Linux), `.dmg` + `.app` (macOS)
 
 ### Removed
-- `.exe` (NSIS) Windows installer: dropped in favor of MSI for cleaner uninstall and proper Programs and Features integration
+- `.msi` (WiX) Windows installer: replaced by portable `.zip` for easy local testing without signing
+- `.exe` (NSIS) Windows installer: dropped in favor of portable distribution
 
 ### Added
 - Multi-tab browsing with full back/forward history per tab
