@@ -21,7 +21,7 @@ jobs:
           - platform: ubuntu-22.04
             args: ''
           - platform: windows-latest
-            args: ''
+            args: --no-bundle
 
     runs-on: ${{ matrix.platform }}
 
