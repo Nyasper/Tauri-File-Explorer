@@ -84,12 +84,17 @@ jobs:
           prerelease: false
           args: ${{ matrix.args }}
 
+      - name: Build frontend (Windows only)
+        if: matrix.platform == 'windows-latest'
+        run: bun run build
+
       - name: Build executable (Windows, no tauri bundle)
         if: matrix.platform == 'windows-latest'
         shell: pwsh
         run: |
+          cd src-tauri
           cargo build --release
-          if (-not (Test-Path "src-tauri/target/release/tauri-svelte-file-explorer.exe")) {
+          if (-not (Test-Path "target/release/tauri-svelte-file-explorer.exe")) {
             Write-Error "Executable not found after build"
             exit 1
           }
