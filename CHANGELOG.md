@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - Unreleased
+
+### Added
+- **Welcome screen**: quick-navigation hub shown on launch with:
+  - Quick Access and Drives cards from the sidebar for one-click navigation
+  - Recents list (folders navigate, files open with the system handler)
+  - Quick actions for Settings (`Ctrl+O`) and Help (`F1`) with visible shortcut hints
+  - "Show this screen on startup" checkbox to opt out (falls back to Last Session)
+- "Welcome" option in Settings → General → "On Startup"
+- Welcome screen can be reopened at any time via the new TabBar home button or `Ctrl+N`; `Esc` closes it
+- Collapsible sidebar sections (Quick Access, Drives, Recents) with collapse state persisted across launches
+- "Clear all recents" button in the Recents section header (with confirmation dialog)
+- Hidden files and folders are now visually dimmed in list and grid views to distinguish them
+
+### Changed
+- Default startup mode for new installations is now "welcome" (existing configs keep their current setting)
+- Recents section moved below Drives in the sidebar
+
 ## [1.0.0] - 2026-07-25
 
 ### Added
@@ -61,4 +79,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Asset protocol enabled with `**` scope (required for image thumbnails)
 - All filesystem operations go through Tauri commands; no direct `invoke` from components
 
+[1.1.0]: https://github.com/herre/tauri-svelte-file-explorer/compare/v1.0.0...HEAD
 [1.0.0]: https://github.com/herre/tauri-svelte-file-explorer/releases/tag/v1.0.0
