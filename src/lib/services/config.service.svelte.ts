@@ -6,7 +6,7 @@ export class ConfigService {
   #store: LazyStore | null = null;
   #defaultConfig: ApplicationConfig = $state({
     defaultTheme: "system",
-    defaultPath: "root",
+    defaultPaths: ["root"],
     onStartup: "welcome",
     defaultViewMode: "list",
     sort: {
@@ -53,7 +53,7 @@ export class ConfigService {
             // Track all config fields for auto-save, then persist.
             const _ = {
               defaultTheme: this.config.defaultTheme,
-              defaultPath: this.config.defaultPath,
+              defaultPaths: this.config.defaultPaths,
               onStartup: this.config.onStartup,
               defaultViewMode: this.config.defaultViewMode,
               sortBy: this.config.sort.by,

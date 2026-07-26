@@ -21,7 +21,7 @@ export type AccentColor =
 
 export interface ApplicationConfig {
   defaultTheme: Theme;
-  defaultPath: string;
+  defaultPaths: string[];
   onStartup: StartupMode;
   defaultViewMode: ViewMode;
   sort: {

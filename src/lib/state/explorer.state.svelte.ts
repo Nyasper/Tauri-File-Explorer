@@ -47,31 +47,33 @@ export class ExplorerState {
   // being read back.
   private sessionReady = $state(false);
 
-  // Resolve the initial path from the onStartup mode. "custom" uses the
-  // configured defaultPath; "last-session" is handled separately by
-  // tryRestoreSession and "welcome" keeps tabs at the root path, both
-  // falling back to "/" here.
-  private async resolveStartupPath(): Promise<string> {
+  // Resolve the initial path(s) from the onStartup mode. "custom" maps the
+  // configured defaultPaths list; "last-session" is handled separately by
+  // tryRestoreSession and "welcome" keeps tabs at the root path.
+  private async resolveStartupPaths(): Promise<string[]> {
     switch (configService.config.onStartup) {
       case "home":
         try {
-          return await explorerApi.getHomeDir();
+          return [await explorerApi.getHomeDir()];
         } catch (err) {
           console.error(
             "Failed to resolve home directory, falling back to root:",
             err,
           );
-          return "/";
+          return ["/"];
         }
       case "custom": {
-        const custom = configService.config.defaultPath;
-        return custom === "root" || !custom.trim() ? "/" : custom;
+        const paths = configService.config.defaultPaths;
+        if (!paths || paths.length === 0) return ["/"];
+        return paths.map((p) =>
+          p === "root" || !p.trim() ? "/" : p.trim(),
+        );
       }
-      case "last-session": // handled by tryRestoreSession; fallback when it fails
-      case "welcome": // welcome overlay keeps the initial tabs at root
+      case "last-session":
+      case "welcome":
       case "root":
       default:
-        return "/";
+        return ["/"];
     }
   }
 
@@ -106,35 +108,35 @@ export class ExplorerState {
 
           // "welcome" mode shows the welcome screen overlay on launch;
           // the initial tabs stay at the root path (the default fallback
-          // of resolveStartupPath) until the user picks a destination.
+          // of resolveStartupPaths) until the user picks a destination.
           if (configService.config.onStartup === "welcome") {
             this.isWelcomeOpen = true;
           }
 
-          const startupPath = await this.resolveStartupPath();
-          this.defaultPath = startupPath;
+          const startupPaths = await this.resolveStartupPaths();
+          this.defaultPath = startupPaths[0];
 
           const sortBy = this.mapConfigSortBy();
 
-          // Apply loaded defaults to every tab that hasn't been navigated yet
-          // (historyIndex === 0 means the user never moved off the initial path).
-          for (const tab of this.tabs) {
-            if (tab.historyIndex !== 0) continue;
+          // Apply defaults to the initial tab and set its path to the
+          // first startup entry (historyIndex is always 0 at this point).
+          const initialTab = this.tabs[0];
+          initialTab.viewState.viewMode =
+            configService.config.defaultViewMode;
+          initialTab.viewState.sortBy = sortBy;
+          initialTab.viewState.sortOrder =
+            configService.config.sort.order;
+          initialTab.currentPath = startupPaths[0];
+          initialTab.history = [startupPaths[0]];
+          this.loadDirectoryForTab(
+            initialTab.id,
+            "primary",
+            startupPaths[0],
+          );
 
-            tab.viewState.viewMode = configService.config.defaultViewMode;
-            tab.viewState.sortBy = sortBy;
-            tab.viewState.sortOrder = configService.config.sort.order;
-
-            const initial = tab.history[0];
-            // Apply startup path if the tab hasn't navigated away from it
-            if (
-              (initial === "/" || initial === "root") &&
-              startupPath !== initial
-            ) {
-              tab.currentPath = startupPath;
-              tab.history = [startupPath];
-              this.loadDirectoryForTab(tab.id, "primary", startupPath);
-            }
+          // Open additional tabs for every remaining startup path
+          for (let i = 1; i < startupPaths.length; i++) {
+            this.addTab(startupPaths[i]);
           }
 
           this.sessionReady = true;

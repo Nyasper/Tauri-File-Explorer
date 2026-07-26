@@ -71,19 +71,6 @@
         <div class="settings-section" transition:fade={{ duration: 150 }}>
           <div class="setting-item">
             <div class="setting-info">
-              <span class="setting-label">Default Startup Path</span>
-              <span class="setting-desc">Directory to open on launch when "Custom" startup mode is selected.</span>
-            </div>
-            <input 
-              type="text" 
-              class="setting-input" 
-              placeholder="e.g. C:/Users/Documents" 
-              bind:value={configService.config.defaultPath} 
-            />
-          </div>
-
-          <div class="setting-item">
-            <div class="setting-info">
               <span class="setting-label">On Startup</span>
               <span class="setting-desc">Choose what to display when launching the app.</span>
             </div>
@@ -112,6 +99,48 @@
               {/each}
             </div>
           </div>
+
+          {#if configService.config.onStartup === 'custom'}
+            <div class="setting-item">
+              <div class="setting-info">
+                <span class="setting-label">Default Startup Paths</span>
+                <span class="setting-desc">Paths to open in separate tabs at launch.</span>
+              </div>
+              <div class="paths-list">
+                {#each configService.config.defaultPaths as path, i (i)}
+                  <div class="path-row">
+                    <input 
+                      type="text" 
+                      class="setting-input path-input" 
+                      placeholder="e.g. C:/Users/Documents" 
+                      bind:value={configService.config.defaultPaths[i]} 
+                    />
+                    <button 
+                      class="path-remove-btn" 
+                      onclick={() => configService.config.defaultPaths.splice(i, 1)} 
+                      aria-label="Remove path"
+                      title="Remove path"
+                    >
+                      <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                      </svg>
+                    </button>
+                  </div>
+                {/each}
+                <button 
+                  class="add-path-btn"
+                  onclick={() => configService.config.defaultPaths = [...configService.config.defaultPaths, '/']}
+                >
+                  <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                  </svg>
+                  <span>Add Path</span>
+                </button>
+              </div>
+            </div>
+          {/if}
         </div>
       {/if}
 
@@ -600,5 +629,68 @@
   .color-dot.active {
     border-color: var(--text-primary);
     transform: scale(1.05);
+  }
+
+  /* Startup Paths list */
+  .paths-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 4px;
+  }
+
+  .path-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .path-input {
+    flex: 1;
+  }
+
+  .path-remove-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: var(--radius-sm);
+    padding: 0;
+    color: var(--text-muted);
+    background: transparent;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    flex-shrink: 0;
+  }
+
+  .path-remove-btn:hover {
+    background-color: var(--bg-hover);
+    border-color: var(--border-color);
+    color: var(--danger);
+  }
+
+  .add-path-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 30px;
+    padding: 0 12px;
+    border-radius: var(--radius-sm);
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--accent);
+    background: transparent;
+    border: 1px dashed var(--border-color);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+  }
+
+  .add-path-btn:hover {
+    background-color: var(--bg-hover);
+    border-color: var(--accent);
+    border-style: solid;
   }
 </style>

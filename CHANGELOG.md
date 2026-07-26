@@ -21,6 +21,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Default startup mode for new installations is now "welcome" (existing configs keep their current setting)
+- **"Default Startup Path" is now "Default Startup Paths"**: supports multiple paths in Custom startup mode.
+  Each path opens in its own tab, shown as a dynamic list with add/remove buttons, visible only when
+  "Custom" is selected in the On Startup switcher
 - Recents section moved below Drives in the sidebar
 
 ## [1.0.0] - 2026-07-25
