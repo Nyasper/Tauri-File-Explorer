@@ -5,6 +5,8 @@ export interface SidebarNode {
   hasSubfolders: boolean;
   children: SidebarNode[] | null;
   isLoading: boolean;
+  /** True for user-pinned entries; false (omitted) for system roots/drives. */
+  userAdded?: boolean;
 }
 
 export interface SystemPathEntry {

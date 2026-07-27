@@ -1,10 +1,22 @@
 import type { SidebarNode } from "../types/sidebar.types";
 import * as explorerApi from "../explorer.api";
 import { normalizePath, isParentPath, getParentPath as getParentPathHelper } from "../utils/path.helper";
+import { pinnedFoldersService } from "../services/pinned-folders.service.svelte";
 
 export class SidebarState {
   roots: SidebarNode[] = $state([]);
   drives: SidebarNode[] = $state([]);
+  pinned = $derived.by(() =>
+    pinnedFoldersService.entries.map((e) => ({
+      name: e.name,
+      path: e.path,
+      isExpanded: false,
+      hasSubfolders: true,
+      children: null,
+      isLoading: false,
+      userAdded: true,
+    }))
+  );
   isInitialized = $state(false);
   #expandGeneration = 0;
 
@@ -42,6 +54,18 @@ export class SidebarState {
       this.roots = [];
       this.drives = [];
     }
+  }
+
+  /**
+   * Toggle a folder's pinned state. Returns the new state
+   * (`true` if pinned after the call, `false` if unpinned).
+   */
+  togglePinned(path: string, name: string): boolean {
+    return pinnedFoldersService.toggle(path, name);
+  }
+
+  unpinFolder(path: string) {
+    pinnedFoldersService.unpin(path);
   }
 
   /**
