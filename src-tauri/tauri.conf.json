@@ -32,7 +32,7 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["nsis", "deb", "rpm", "appimage", "app", "dmg"],
+    "targets": ["deb", "rpm", "appimage", "app", "dmg"],
     "category": "Utility",
     "shortDescription": "Cross-platform desktop file explorer built with Tauri v2 and Svelte 5.",
     "longDescription": "A high-performance, cross-platform native file explorer for Windows, macOS, and Linux. Features multi-tab navigation, split-pane views, indexed search, session restoration, and a polished glassmorphic dark/light UI.",
