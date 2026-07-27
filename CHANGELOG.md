@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.1.0] - Unreleased
+## [1.1.0] - 2026-07-27
 
 ### Added
 - Welcome screen: quick-navigation hub shown on launch with:
@@ -33,6 +33,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   in a new tab; middle-click on a tab in the TabBar closes that tab. Matches common browser
   and file-manager behavior. Files and the last remaining tab are unaffected by middle-click
   (same constraint as `Ctrl+W`)
+- **Windows NSIS installer** (`Tauri File Explorer_1.1.0_x64-setup.exe`) as an alternative to the
+  portable `.zip`, with a traditional install wizard (per-user install, no admin required).
+  Unsigned NSIS installers may still trigger a SmartScreen prompt on first run ("More info" →
+  "Run anyway"), but are not flagged as trojans by Windows Defender the way the unsigned MSI was
 
 ### Changed
 - Default startup mode for new installations is now "welcome" (existing configs keep their current setting)
@@ -120,5 +124,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Asset protocol enabled with `**` scope (required for image thumbnails)
 - All filesystem operations go through Tauri commands; no direct `invoke` from components
 
-[1.1.0]: https://github.com/herre/tauri-svelte-file-explorer/compare/v1.0.0...HEAD
-[1.0.0]: https://github.com/herre/tauri-svelte-file-explorer/releases/tag/v1.0.0
+[1.1.0]: https://github.com/Nyasper/Tauri-File-Explorer/compare/v1.0.0...v1.1.0
+[1.0.0]: https://github.com/Nyasper/Tauri-File-Explorer/releases/tag/v1.0.0
