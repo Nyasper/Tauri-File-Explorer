@@ -9,6 +9,7 @@ export type SortOrder = "asc" | "desc";
 export type SortBy = "name" | "size" | "type" | "date";
 export type Theme = "system" | "light" | "dark";
 export type OpenMode = "singleClick" | "doubleClick";
+export type SidebarSection = "quickAccess" | "pinned" | "drives" | "recents";
 export type AccentColor =
   | "#eab308"
   | "#10b981"
@@ -34,5 +35,7 @@ export interface ApplicationConfig {
   confirmDelete: boolean;
   openMode: OpenMode;
   showSidebar: boolean;
+  sidebarSectionOrder: SidebarSection[];
+  welcomeSectionOrder: SidebarSection[];
   defaultAccentColor: AccentColor;
 }

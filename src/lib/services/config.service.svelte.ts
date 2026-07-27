@@ -19,6 +19,8 @@ export class ConfigService {
     confirmDelete: true,
     openMode: "doubleClick",
     showSidebar: true,
+    sidebarSectionOrder: ["quickAccess", "pinned", "drives", "recents"],
+    welcomeSectionOrder: ["quickAccess", "pinned", "drives", "recents"],
     defaultAccentColor: "#3b82f6",
   });
 
@@ -64,6 +66,8 @@ export class ConfigService {
               confirmDelete: this.config.confirmDelete,
               openMode: this.config.openMode,
               showSidebar: this.config.showSidebar,
+              sidebarSectionOrder: this.config.sidebarSectionOrder,
+              welcomeSectionOrder: this.config.welcomeSectionOrder,
               defaultAccentColor: this.config.defaultAccentColor,
             };
             void _;

@@ -29,6 +29,65 @@
     }
   }
 
+  // Section collapse state (persisted in localStorage)
+  const COLLAPSE_STORAGE_KEY = 'sidebar-section-collapse';
+
+  function loadSectionState(): { quickAccess: boolean; pinned: boolean; drives: boolean; recents: boolean } {
+    try {
+      const raw = localStorage.getItem(COLLAPSE_STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        return {
+          quickAccess: parsed.quickAccess ?? true,
+          pinned: parsed.pinned ?? true,
+          drives: parsed.drives ?? true,
+          recents: parsed.recents ?? false,
+        };
+      }
+    } catch {}
+    return { quickAccess: true, pinned: true, drives: true, recents: false };
+  }
+
+  function saveSectionState(state: { quickAccess: boolean; pinned: boolean; drives: boolean; recents: boolean }) {
+    try {
+      localStorage.setItem(COLLAPSE_STORAGE_KEY, JSON.stringify(state));
+    } catch {}
+  }
+
+  const initial = loadSectionState();
+  let isQuickAccessExpanded = $state(initial.quickAccess);
+  let isPinnedExpanded = $state(initial.pinned);
+  let isDrivesExpanded = $state(initial.drives);
+  let isRecentsExpanded = $state(initial.recents);
+
+  $effect(() => {
+    // Re-save whenever any section toggle changes
+    void isQuickAccessExpanded; void isPinnedExpanded; void isDrivesExpanded; void isRecentsExpanded;
+    saveSectionState({
+      quickAccess: isQuickAccessExpanded,
+      pinned: isPinnedExpanded,
+      drives: isDrivesExpanded,
+      recents: isRecentsExpanded,
+    });
+  });
+
+  function toggleSection(section: 'quickAccess' | 'pinned' | 'drives' | 'recents') {
+    if (section === 'quickAccess') isQuickAccessExpanded = !isQuickAccessExpanded;
+    else if (section === 'pinned') isPinnedExpanded = !isPinnedExpanded;
+    else if (section === 'drives') isDrivesExpanded = !isDrivesExpanded;
+    else isRecentsExpanded = !isRecentsExpanded;
+  }
+
+  async function handleClearRecents(e: MouseEvent) {
+    e.stopPropagation();
+    const confirmed = await dialogService.confirm('Remove all recent items?', {
+      title: 'Clear Recents',
+      confirmLabel: 'Clear',
+      danger: true
+    });
+    if (confirmed) recentsService.clear();
+  }
+
   let isRecycleBinBusy = $state(false);
 
   async function handleEmptyRecycleBin(e: MouseEvent) {
@@ -134,99 +193,154 @@
 >
   <div class="sidebar-scrollable-content">
     
-    <!-- Quick Access Section -->
-    <div class="sidebar-section">
-      <div class="sidebar-header">
-        <span class="header-title">Quick Access</span>
-      </div>
-      <div class="sidebar-content">
-        {#if !sidebarState.isInitialized}
-          <div class="loading-message">
-            <div class="spinner"></div>
-            <span>Loading places...</span>
+    {#each configService.config.sidebarSectionOrder as section (section)}
+      {#if section === 'quickAccess'}
+        <!-- Quick Access Section -->
+        <div class="sidebar-section">
+          <!-- svelte-ignore a11y_click_events_have_key_events -->
+          <!-- svelte-ignore a11y_no_static_element_interactions -->
+          <div class="sidebar-header" onclick={() => toggleSection('quickAccess')} role="button" tabindex="0" aria-expanded={isQuickAccessExpanded}>
+            <svg class="header-chevron" class:expanded={isQuickAccessExpanded} viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="3" fill="none"><polyline points="9 18 15 12 9 6"/></svg>
+            <span class="header-title">Quick Access</span>
           </div>
-        {:else if sidebarState.roots.length === 0}
-          <div class="empty-message">No places found</div>
-        {:else}
-          <div class="roots-container">
-            {#each sidebarState.roots as root (root.path)}
-              <SidebarItem node={root} depth={0} />
-            {/each}
-          </div>
-        {/if}
-      </div>
-    </div>
-
-    <!-- Recents Section -->
-    {#if configService.config.rememberRecents}
-      <div class="sidebar-section">
-        <div class="sidebar-header">
-          <span class="header-title">Recents</span>
-        </div>
-        <div class="sidebar-content">
-          {#if recentsService.recents.length === 0}
-            <div class="empty-message">No recent items</div>
-          {:else}
-            <div class="roots-container">
-              {#each recentsService.recents as recent (recent.path)}
-                <!-- svelte-ignore a11y_click_events_have_key_events -->
-                <!-- svelte-ignore a11y_no_static_element_interactions -->
-                <div
-                  class="sidebar-item recent-item"
-                  onclick={() => handleOpenRecent(recent)}
-                  title={recent.path}
-                >
-                  <div class="item-left">
-                    <span class="folder-icon">
-                      {#if recent.isDir}
-                        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
-                      {:else}
-                        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
-                      {/if}
-                    </span>
-                    <span class="folder-name">{recent.name}</span>
-                  </div>
-                  <button
-                    class="remove-btn"
-                    onclick={(e) => { e.stopPropagation(); recentsService.remove(recent.path); }}
-                    aria-label="Remove from recents"
-                    title="Remove from recents"
-                  >
-                    <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                      <line x1="18" y1="6" x2="6" y2="18"></line>
-                      <line x1="6" y1="6" x2="18" y2="18"></line>
-                    </svg>
-                  </button>
+          {#if isQuickAccessExpanded}
+            <div class="sidebar-content">
+              {#if !sidebarState.isInitialized}
+                <div class="loading-message">
+                  <div class="spinner"></div>
+                  <span>Loading places...</span>
                 </div>
-              {/each}
+              {:else if sidebarState.roots.length === 0}
+                <div class="empty-message">No places found</div>
+              {:else}
+                <div class="roots-container">
+                  {#each sidebarState.roots as root (root.path)}
+                    <SidebarItem node={root} depth={0} />
+                  {/each}
+                </div>
+              {/if}
             </div>
           {/if}
         </div>
-      </div>
-    {/if}
+      {/if}
 
-    <!-- Drives Section -->
-    <div class="sidebar-section">
-      <div class="sidebar-header">
-        <span class="header-title">Drives</span>
-      </div>
-      <div class="sidebar-content">
-        {#if !sidebarState.isInitialized}
-          <div class="loading-message">
-            <div class="spinner"></div>
-            <span>Loading drives...</span>
+      {#if section === 'pinned' && sidebarState.pinned.length > 0}
+        <!-- Pinned Section -->
+        <div class="sidebar-section">
+          <!-- svelte-ignore a11y_click_events_have_key_events -->
+          <!-- svelte-ignore a11y_no_static_element_interactions -->
+          <div class="sidebar-header" onclick={() => toggleSection('pinned')} role="button" tabindex="0" aria-expanded={isPinnedExpanded}>
+            <svg class="header-chevron" class:expanded={isPinnedExpanded} viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="3" fill="none"><polyline points="9 18 15 12 9 6"/></svg>
+            <span class="header-title">Pinned</span>
           </div>
-        {:else if sidebarState.drives.length === 0}
-          <div class="empty-message">No drives found</div>
-        {:else}
-          <div class="roots-container">
-            {#each sidebarState.drives as drive (drive.path)}
-              <SidebarItem node={drive} depth={0} />
-            {/each}
+          {#if isPinnedExpanded}
+            <div class="sidebar-content">
+              <div class="roots-container">
+                {#each sidebarState.pinned as node (node.path)}
+                  <SidebarItem node={node} depth={0} />
+                {/each}
+              </div>
+            </div>
+          {/if}
+        </div>
+      {/if}
+
+      {#if section === 'drives'}
+        <!-- Drives Section -->
+        <div class="sidebar-section">
+          <!-- svelte-ignore a11y_click_events_have_key_events -->
+          <!-- svelte-ignore a11y_no_static_element_interactions -->
+          <div class="sidebar-header" onclick={() => toggleSection('drives')} role="button" tabindex="0" aria-expanded={isDrivesExpanded}>
+            <svg class="header-chevron" class:expanded={isDrivesExpanded} viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="3" fill="none"><polyline points="9 18 15 12 9 6"/></svg>
+            <span class="header-title">Drives</span>
+          </div>
+          {#if isDrivesExpanded}
+            <div class="sidebar-content">
+              {#if !sidebarState.isInitialized}
+                <div class="loading-message">
+                  <div class="spinner"></div>
+                  <span>Loading drives...</span>
+                </div>
+              {:else if sidebarState.drives.length === 0}
+                <div class="empty-message">No drives found</div>
+              {:else}
+                <div class="roots-container">
+                  {#each sidebarState.drives as drive (drive.path)}
+                    <SidebarItem node={drive} depth={0} />
+                  {/each}
+                </div>
+              {/if}
+            </div>
+          {/if}
+        </div>
+      {/if}
+
+      {#if section === 'recents' && configService.config.rememberRecents}
+      <div class="sidebar-section">
+        <!-- svelte-ignore a11y_click_events_have_key_events -->
+        <!-- svelte-ignore a11y_no_static_element_interactions -->
+        <div class="sidebar-header" onclick={() => toggleSection('recents')} role="button" tabindex="0" aria-expanded={isRecentsExpanded}>
+          <svg class="header-chevron" class:expanded={isRecentsExpanded} viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="3" fill="none"><polyline points="9 18 15 12 9 6"/></svg>
+          <span class="header-title">Recents</span>
+          {#if recentsService.recents.length > 0}
+            <!-- svelte-ignore a11y_click_events_have_key_events -->
+            <button
+              class="clear-recents-btn"
+              onclick={handleClearRecents}
+              title="Clear all recents"
+              aria-label="Clear all recents"
+            >
+              <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          {/if}
+        </div>
+        {#if isRecentsExpanded}
+          <div class="sidebar-content">
+            {#if recentsService.recents.length === 0}
+              <div class="empty-message">No recent items</div>
+            {:else}
+              <div class="roots-container">
+                {#each recentsService.recents as recent (recent.path)}
+                  <!-- svelte-ignore a11y_click_events_have_key_events -->
+                  <!-- svelte-ignore a11y_no_static_element_interactions -->
+                  <div
+                    class="sidebar-item recent-item"
+                    onclick={() => handleOpenRecent(recent)}
+                    title={recent.path}
+                  >
+                    <div class="item-left">
+                      <span class="folder-icon">
+                        {#if recent.isDir}
+                          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+                        {:else}
+                          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                        {/if}
+                      </span>
+                      <span class="folder-name">{recent.name}</span>
+                    </div>
+                    <button
+                      class="remove-btn"
+                      onclick={(e) => { e.stopPropagation(); recentsService.remove(recent.path); }}
+                      aria-label="Remove from recents"
+                      title="Remove from recents"
+                    >
+                      <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                      </svg>
+                    </button>
+                  </div>
+                {/each}
+              </div>
+            {/if}
           </div>
         {/if}
       </div>
-    </div>
+    {/if}
+  {/each}
 
   </div>
 
@@ -319,8 +433,27 @@
     height: 32px;
     display: flex;
     align-items: center;
+    gap: 6px;
     padding: 0 16px;
     flex-shrink: 0;
+    cursor: pointer;
+    user-select: none;
+    border-radius: var(--radius-sm);
+    transition: background-color var(--transition-fast);
+  }
+
+  .sidebar-header:hover {
+    background-color: var(--bg-hover);
+  }
+
+  .header-chevron {
+    flex-shrink: 0;
+    color: var(--text-muted);
+    transition: transform var(--transition-normal);
+  }
+
+  .header-chevron.expanded {
+    transform: rotate(90deg);
   }
 
   .header-title {
@@ -408,6 +541,31 @@
   }
 
   .remove-btn:hover {
+    background-color: var(--bg-hover);
+    color: var(--danger);
+  }
+
+  /* Clear-all recents button in section header */
+  .clear-recents-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: var(--radius-sm);
+    padding: 0;
+    color: var(--text-muted);
+    flex-shrink: 0;
+    opacity: 0;
+    margin-left: auto;
+    transition: opacity var(--transition-fast), background-color var(--transition-fast), color var(--transition-fast);
+  }
+
+  .sidebar-header:hover .clear-recents-btn {
+    opacity: 1;
+  }
+
+  .clear-recents-btn:hover {
     background-color: var(--bg-hover);
     color: var(--danger);
   }

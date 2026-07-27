@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.1.0] - Unreleased
 
 ### Added
-- **Welcome screen**: quick-navigation hub shown on launch with:
+- Welcome screen: quick-navigation hub shown on launch with:
   - Quick Access and Drives cards from the sidebar for one-click navigation
   - Recents list (folders navigate, files open with the system handler)
   - Quick actions for Settings (`Ctrl+O`) and Help (`F1`) with visible shortcut hints
@@ -18,6 +18,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Collapsible sidebar sections (Quick Access, Drives, Recents) with collapse state persisted across launches
 - "Clear all recents" button in the Recents section header (with confirmation dialog)
 - Hidden files and folders are now visually dimmed in list and grid views to distinguish them
+- Configurable section order for sidebar and welcome screen via Settings → Appearance
+  with ↑/↓ buttons (Quick Access, Pinned, Drives, Recents)
+- **Pinned folders**: right-click any folder in the list or grid view to "Pin Folder"; pinned folders appear
+  in a new collapsible "Pinned" section in the sidebar (between Quick Access and Drives) and in the
+  welcome screen, persisted across launches. Toggle the state from the same menu ("Unpin Folder") or
+  remove directly from the sidebar's context menu. Pinned entries support the same expand/collapse
+  tree behavior as system Quick Access roots
 
 ### Changed
 - Default startup mode for new installations is now "welcome" (existing configs keep their current setting)

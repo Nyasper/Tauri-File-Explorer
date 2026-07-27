@@ -76,84 +76,106 @@
     </header>
 
     <div class="welcome-content">
-      <section class="welcome-section">
-        <h2 class="section-title">Quick Access</h2>
-        <div class="cards-grid">
-          <button class="place-card" onclick={() => openFolder('/')} title="/">
-            <svg class="card-icon" viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
-              <line x1="8" y1="21" x2="16" y2="21"></line>
-              <line x1="12" y1="17" x2="12" y2="21"></line>
-            </svg>
-            <span class="card-label">Root</span>
-          </button>
-          {#each sidebarState.roots as node (node.path)}
-            <button class="place-card" onclick={() => openFolder(node.path)} title={node.path}>
-              <svg class="card-icon folder" viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
-              </svg>
-              <span class="card-label">{node.name}</span>
-            </button>
-          {/each}
-        </div>
-      </section>
-
-      {#if sidebarState.drives.length > 0}
-        <section class="welcome-section">
-          <h2 class="section-title">Drives</h2>
-          <div class="cards-grid">
-            {#each sidebarState.drives as drive (drive.path)}
-              <button class="place-card" onclick={() => openFolder(drive.path)} title={drive.path}>
-                <svg class="card-icon drive" viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                  <line x1="22" y1="12" x2="2" y2="12"></line>
-                  <path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"></path>
-                  <line x1="6" y1="16" x2="6.01" y2="16"></line>
-                  <line x1="10" y1="16" x2="10.01" y2="16"></line>
+      {#each configService.config.welcomeSectionOrder as section (section)}
+        {#if section === 'quickAccess'}
+          <section class="welcome-section">
+            <h2 class="section-title">Quick Access</h2>
+            <div class="cards-grid">
+              <button class="place-card" onclick={() => openFolder('/')} title="/">
+                <svg class="card-icon" viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                  <line x1="8" y1="21" x2="16" y2="21"></line>
+                  <line x1="12" y1="17" x2="12" y2="21"></line>
                 </svg>
-                <span class="card-label">{drive.name}</span>
+                <span class="card-label">Root</span>
               </button>
-            {/each}
-          </div>
-        </section>
-      {/if}
-
-      <section class="welcome-section">
-        <div class="section-header">
-          <h2 class="section-title">Recents</h2>
-          {#if configService.config.rememberRecents && recentItems.length > 0}
-            <button class="clear-recents-btn" onclick={handleClearRecents} title="Clear all recents" aria-label="Clear all recents">
-              <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="18" y1="6" x2="6" y2="18"></line>
-                <line x1="6" y1="6" x2="18" y2="18"></line>
-              </svg>
-            </button>
-          {/if}
-        </div>
-        {#if !configService.config.rememberRecents}
-          <p class="empty-hint">Recents are disabled. You can enable them back in Settings.</p>
-        {:else if recentItems.length === 0}
-          <p class="empty-hint">No recent items yet. Folders and files you open will show up here.</p>
-        {:else}
-          <div class="recents-list">
-            {#each recentItems as recent (recent.path)}
-              <button class="recent-row" onclick={() => openRecent(recent)} title={recent.path}>
-                {#if recent.isDir}
-                  <svg class="recent-icon folder" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+              {#each sidebarState.roots as node (node.path)}
+                <button class="place-card" onclick={() => openFolder(node.path)} title={node.path}>
+                  <svg class="card-icon folder" viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
                   </svg>
-                {:else}
-                  <svg class="recent-icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
-                    <polyline points="13 2 13 9 20 9"></polyline>
-                  </svg>
-                {/if}
-                <span class="recent-name">{recent.name}</span>
-                <span class="recent-path">{recent.path}</span>
-              </button>
-            {/each}
-          </div>
+                  <span class="card-label">{node.name}</span>
+                </button>
+              {/each}
+            </div>
+          </section>
         {/if}
-      </section>
+
+        {#if section === 'pinned' && sidebarState.pinned.length > 0}
+          <section class="welcome-section">
+            <h2 class="section-title">Pinned</h2>
+            <div class="cards-grid">
+              {#each sidebarState.pinned as node (node.path)}
+                <button class="place-card" onclick={() => openFolder(node.path)} title={node.path}>
+                  <svg class="card-icon folder" viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                  </svg>
+                  <span class="card-label">{node.name}</span>
+                </button>
+              {/each}
+            </div>
+          </section>
+        {/if}
+
+        {#if section === 'drives' && sidebarState.drives.length > 0}
+          <section class="welcome-section">
+            <h2 class="section-title">Drives</h2>
+            <div class="cards-grid">
+              {#each sidebarState.drives as drive (drive.path)}
+                <button class="place-card" onclick={() => openFolder(drive.path)} title={drive.path}>
+                  <svg class="card-icon drive" viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="22" y1="12" x2="2" y2="12"></line>
+                    <path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"></path>
+                    <line x1="6" y1="16" x2="6.01" y2="16"></line>
+                    <line x1="10" y1="16" x2="10.01" y2="16"></line>
+                  </svg>
+                  <span class="card-label">{drive.name}</span>
+                </button>
+              {/each}
+            </div>
+          </section>
+        {/if}
+
+        {#if section === 'recents'}
+          <section class="welcome-section">
+            <div class="section-header">
+              <h2 class="section-title">Recents</h2>
+              {#if configService.config.rememberRecents && recentItems.length > 0}
+                <button class="clear-recents-btn" onclick={handleClearRecents} title="Clear all recents" aria-label="Clear all recents">
+                  <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                  </svg>
+                </button>
+              {/if}
+            </div>
+            {#if !configService.config.rememberRecents}
+              <p class="empty-hint">Recents are disabled. You can enable them back in Settings.</p>
+            {:else if recentItems.length === 0}
+              <p class="empty-hint">No recent items yet. Folders and files you open will show up here.</p>
+            {:else}
+              <div class="recents-list">
+                {#each recentItems as recent (recent.path)}
+                  <button class="recent-row" onclick={() => openRecent(recent)} title={recent.path}>
+                    {#if recent.isDir}
+                      <svg class="recent-icon folder" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                      </svg>
+                    {:else}
+                      <svg class="recent-icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
+                        <polyline points="13 2 13 9 20 9"></polyline>
+                      </svg>
+                    {/if}
+                    <span class="recent-name">{recent.name}</span>
+                    <span class="recent-path">{recent.path}</span>
+                  </button>
+                {/each}
+              </div>
+            {/if}
+          </section>
+        {/if}
+      {/each}
     </div>
 
     <footer class="welcome-footer">

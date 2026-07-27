@@ -1,11 +1,34 @@
 <script lang="ts">
   import Modal from './shared/Modal.svelte';
   import { configService } from '$lib/services/config.service.svelte';
-  import type { Theme, ViewMode, StartupMode, OpenMode, AccentColor, SortBy, SortOrder } from '$lib/types/application.config.types';
+  import type { Theme, ViewMode, StartupMode, OpenMode, AccentColor, SortBy, SortOrder, SidebarSection } from '$lib/types/application.config.types';
   import { fade, crossfade } from 'svelte/transition';
   import { cubicInOut } from 'svelte/easing';
 
   let { isModalOpen = $bindable(false) } = $props();
+
+  function sectionLabel(section: SidebarSection): string {
+    switch (section) {
+      case "quickAccess": return "Quick Access";
+      case "pinned": return "Pinned";
+      case "drives": return "Drives";
+      case "recents": return "Recents";
+    }
+  }
+
+  function moveItemUp(arr: SidebarSection[], i: number) {
+    if (i <= 0) return;
+    const copy = [...arr];
+    [copy[i - 1], copy[i]] = [copy[i], copy[i - 1]];
+    return copy;
+  }
+
+  function moveItemDown(arr: SidebarSection[], i: number) {
+    if (i >= arr.length - 1) return;
+    const copy = [...arr];
+    [copy[i], copy[i + 1]] = [copy[i + 1], copy[i]];
+    return copy;
+  }
 
   const accentColors: AccentColor[] = [
     "#3b82f6", // Blue (Default)
@@ -250,6 +273,70 @@
               <input type="checkbox" bind:checked={configService.config.showExtensions} />
               <span class="slider"></span>
             </label>
+          </div>
+
+          <div class="setting-item">
+            <div class="setting-info">
+              <span class="setting-label">Sidebar Section Order</span>
+              <span class="setting-desc">Arrange the sidebar categories top to bottom.</span>
+            </div>
+            <div class="order-list">
+              {#each configService.config.sidebarSectionOrder as section, i (section)}
+                <div class="order-row">
+                  <span class="order-label">{sectionLabel(section)}</span>
+                  <div class="order-btns">
+                    <button 
+                      disabled={i === 0} 
+                      onclick={() => configService.config.sidebarSectionOrder = moveItemUp(configService.config.sidebarSectionOrder, i)!}
+                      aria-label="Move {sectionLabel(section)} up"
+                      title="Move up"
+                    >
+                      <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+                    </button>
+                    <button 
+                      disabled={i === configService.config.sidebarSectionOrder.length - 1} 
+                      onclick={() => configService.config.sidebarSectionOrder = moveItemDown(configService.config.sidebarSectionOrder, i)!}
+                      aria-label="Move {sectionLabel(section)} down"
+                      title="Move down"
+                    >
+                      <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                    </button>
+                  </div>
+                </div>
+              {/each}
+            </div>
+          </div>
+
+          <div class="setting-item">
+            <div class="setting-info">
+              <span class="setting-label">Welcome Screen Section Order</span>
+              <span class="setting-desc">Arrange the welcome screen categories top to bottom.</span>
+            </div>
+            <div class="order-list">
+              {#each configService.config.welcomeSectionOrder as section, i (section)}
+                <div class="order-row">
+                  <span class="order-label">{sectionLabel(section)}</span>
+                  <div class="order-btns">
+                    <button 
+                      disabled={i === 0} 
+                      onclick={() => configService.config.welcomeSectionOrder = moveItemUp(configService.config.welcomeSectionOrder, i)!}
+                      aria-label="Move {sectionLabel(section)} up"
+                      title="Move up"
+                    >
+                      <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+                    </button>
+                    <button 
+                      disabled={i === configService.config.welcomeSectionOrder.length - 1} 
+                      onclick={() => configService.config.welcomeSectionOrder = moveItemDown(configService.config.welcomeSectionOrder, i)!}
+                      aria-label="Move {sectionLabel(section)} down"
+                      title="Move down"
+                    >
+                      <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                    </button>
+                  </div>
+                </div>
+              {/each}
+            </div>
           </div>
         </div>
       {/if}
@@ -692,5 +779,62 @@
     background-color: var(--bg-hover);
     border-color: var(--accent);
     border-style: solid;
+  }
+
+  /* Section order lists */
+  .order-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .order-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 10px;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-color);
+  }
+
+  :root[data-theme="light"] .order-row {
+    background: rgba(0, 0, 0, 0.02);
+  }
+
+  .order-label {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text-primary);
+  }
+
+  .order-btns {
+    display: flex;
+    gap: 4px;
+  }
+
+  .order-btns button {
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    border-radius: var(--radius-sm);
+    color: var(--text-muted);
+    background: transparent;
+    border: 1px solid var(--border-color);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition-fast);
+  }
+
+  .order-btns button:hover:not(:disabled) {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+  }
+
+  .order-btns button:disabled {
+    opacity: 0.25;
+    cursor: not-allowed;
   }
 </style>
