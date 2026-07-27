@@ -1,6 +1,6 @@
-# Project Specification: Tauri & Svelte 5 Native File Explorer
+# AGENTS.md
 
-This document serves as the official specification, design pattern reference, and developer guidelines for building the Native File Explorer. All development agents and engineers working on this project must adhere strictly to the rules and designs outlined below.
+Operating instructions and project specification for AI agents working in this repository.
 
 ---
 
@@ -13,7 +13,6 @@ This document serves as the official specification, design pattern reference, an
 - **Communication**: Tauri IPC (Commands, Channels, and Events). All invocations of Tauri Rust commands must be routed through the type-safe wrappers in [explorer.api.ts](file:///g:/Desktop/tauri-svelte-file-explorer/src/lib/explorer.api.ts). Direct use of Tauri's `invoke` in frontend components is strictly prohibited.
 - **Target OS**: Windows, macOS, Linux (cross-platform desktop application).
 - **Language**: English only for UI, logs, comments, and documentation.
-- **Git Branch**: All work must be carried out on the `feature` branch.
 
 ---
 
@@ -237,7 +236,7 @@ To avoid lag when navigating between frequently visited folders, implement a pat
 
 ## 6. Development Workflow Rules
 
-1. **Verify Lint & Type Checks**: Always run `npm run check` before concluding work.
+1. **Verify Lint & Type Checks**: Always run `bun run check` before concluding work.
 2. **Modular Code**: Do not create massive multi-thousand line files. Keep Svelte files under 300 lines by extracting logic to helpers or smaller components.
 3. **Vanilla CSS Design System**:
    - Establish consistent CSS variables in `src/app.css` (or `src/routes/+layout.svelte`) for color palettes, spacing, border-radii, and animations.
@@ -251,3 +250,23 @@ To avoid lag when navigating between frequently visited folders, implement a pat
    - Svelte Component files: `PascalCase.svelte` (e.g., `TabBar.svelte`).
    - Svelte 5 Reactive Services/State: `kebab-case.role.svelte.ts` (e.g., `keybinding.service.svelte.ts`).
    - Pure TypeScript helpers/APIs (no Svelte runes): `kebab-case.ts` (e.g., `explorer.api.ts`).
+7. **CHANGELOG on new features**: every time a new user-facing feature is added to the application
+   (a new section, a new action, a new modal, a new sidebar entry, a new keyboard shortcut, etc.),
+   update `CHANGELOG.md` automatically — do not wait for the user to ask. Add the entry under
+   `## [Unreleased]` (or the current in-progress version) in the appropriate `### Added`,
+   `### Changed`, `### Fixed`, or `### Removed` subsection. Use the same tone and bullet style as
+   the existing entries. Internal-only refactors, lint cleanups, and CI/build changes do **not**
+   require a CHANGELOG entry; the rule applies to anything the end user can perceive.
+
+---
+
+## 7. Commit Workflow
+
+- **Default branch:** work on the `feature` branch. Do not commit directly to `main` unless explicitly told to.
+- **When to commit:** after each significant, self-contained change (e.g. a new feature, a refactor, a bug fix, a meaningful style/UX pass). Do not commit partial work, debug code, or unrelated edits bundled together.
+- **Commit message style:** short, descriptive, written in English. The project already uses Conventional Commits (e.g. `ci: ...`, `docs: ...`, `chore(bundle): ...`), so prefer a `<type>(<scope>): <summary>` line when it fits, with `type` ∈ `feat`, `fix`, `refactor`, `style`, `docs`, `chore`, `perf`, `test`. Keep the summary under ~72 characters and in the imperative mood (e.g. `feat(grid): dim hidden entries to distinguish them`).
+- **What NOT to do:**
+  - Do **not** push to the remote automatically. Only push when the user explicitly asks for it (e.g. "push", "push it", "subir").
+  - Do **not** use interactive flags (`-i`), force-push, amend an existing commit, skip hooks, or update git config unless explicitly asked.
+  - Do **not** commit secrets, generated assets, or files covered by `.gitignore` (e.g. `node_modules/`, `src-tauri/target/`, `.svelte-kit/`).
+- **Before committing:** review `git status` and `git diff` to make sure only the intended files are staged, and `git log --oneline -10` to match the existing commit style.
