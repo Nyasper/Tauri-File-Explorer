@@ -80,7 +80,7 @@ jobs:
           releaseName: ${{ github.ref_name }}
           releaseBody: |
             See the [CHANGELOG](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/CHANGELOG.md) for the full list of changes in this release.
-          releaseDraft: true
+          releaseDraft: false
           prerelease: false
           args: ${{ matrix.args }}
 
