@@ -42,7 +42,7 @@
   ];
 
   // Helper to change active tab/view within the settings modal if desired (optional tabbed interface inside the settings modal)
-  let activeSection: 'general' | 'appearance' | 'behavior' = $state('general');
+  let activeSection: 'appearance' | 'behavior' = $state('behavior');
 
   const [send, receive] = crossfade({
     duration: 220,
@@ -67,13 +67,6 @@
     <div class="settings-nav">
       <button 
         class="nav-tab" 
-        class:active={activeSection === 'general'} 
-        onclick={() => activeSection = 'general'}
-      >
-        General
-      </button>
-      <button 
-        class="nav-tab" 
         class:active={activeSection === 'appearance'} 
         onclick={() => activeSection = 'appearance'}
       >
@@ -90,82 +83,6 @@
 
     <!-- Settings Content Panel -->
     <div class="settings-body">
-      {#if activeSection === 'general'}
-        <div class="settings-section" transition:fade={{ duration: 150 }}>
-          <div class="setting-item">
-            <div class="setting-info">
-              <span class="setting-label">On Startup</span>
-              <span class="setting-desc">Choose what to display when launching the app.</span>
-            </div>
-            <div class="option-switcher">
-              {#each [
-                { value: 'welcome', label: 'Welcome' },
-                { value: 'last-session', label: 'Last Session' },
-                { value: 'root', label: 'Root' },
-                { value: 'home', label: 'Home' },
-                { value: 'custom', label: 'Custom' }
-              ] as opt}
-                <button 
-                  class="switcher-btn" 
-                  class:active={configService.config.onStartup === opt.value} 
-                  onclick={() => configService.config.onStartup = opt.value as StartupMode}
-                >
-                  {#if configService.config.onStartup === opt.value}
-                    <div 
-                      class="active-indicator" 
-                      in:receive={{ key: 'onStartup' }}
-                      out:send={{ key: 'onStartup' }}
-                    ></div>
-                  {/if}
-                  <span class="btn-label">{opt.label}</span>
-                </button>
-              {/each}
-            </div>
-          </div>
-
-          {#if configService.config.onStartup === 'custom'}
-            <div class="setting-item">
-              <div class="setting-info">
-                <span class="setting-label">Default Startup Paths</span>
-                <span class="setting-desc">Paths to open in separate tabs at launch.</span>
-              </div>
-              <div class="paths-list">
-                {#each configService.config.defaultPaths as path, i (i)}
-                  <div class="path-row">
-                    <input 
-                      type="text" 
-                      class="setting-input path-input" 
-                      placeholder="e.g. C:/Users/Documents" 
-                      bind:value={configService.config.defaultPaths[i]} 
-                    />
-                    <button 
-                      class="path-remove-btn" 
-                      onclick={() => configService.config.defaultPaths.splice(i, 1)} 
-                      aria-label="Remove path"
-                      title="Remove path"
-                    >
-                      <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="18" y1="6" x2="6" y2="18"></line>
-                        <line x1="6" y1="6" x2="18" y2="18"></line>
-                      </svg>
-                    </button>
-                  </div>
-                {/each}
-                <button 
-                  class="add-path-btn"
-                  onclick={() => configService.config.defaultPaths = [...configService.config.defaultPaths, '/']}
-                >
-                  <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="12" y1="5" x2="12" y2="19"></line>
-                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                  </svg>
-                  <span>Add Path</span>
-                </button>
-              </div>
-            </div>
-          {/if}
-        </div>
-      {/if}
 
       {#if activeSection === 'appearance'}
         <div class="settings-section" transition:fade={{ duration: 150 }}>
@@ -343,6 +260,79 @@
 
       {#if activeSection === 'behavior'}
         <div class="settings-section" transition:fade={{ duration: 150 }}>
+          <div class="setting-item">
+            <div class="setting-info">
+              <span class="setting-label">On Startup</span>
+              <span class="setting-desc">Choose what to display when launching the app.</span>
+            </div>
+            <div class="option-switcher">
+              {#each [
+                { value: 'welcome', label: 'Welcome' },
+                { value: 'last-session', label: 'Last Session' },
+                { value: 'root', label: 'Root' },
+                { value: 'home', label: 'Home' },
+                { value: 'custom', label: 'Custom' }
+              ] as opt}
+                <button 
+                  class="switcher-btn" 
+                  class:active={configService.config.onStartup === opt.value} 
+                  onclick={() => configService.config.onStartup = opt.value as StartupMode}
+                >
+                  {#if configService.config.onStartup === opt.value}
+                    <div 
+                      class="active-indicator" 
+                      in:receive={{ key: 'onStartup' }}
+                      out:send={{ key: 'onStartup' }}
+                    ></div>
+                  {/if}
+                  <span class="btn-label">{opt.label}</span>
+                </button>
+              {/each}
+            </div>
+          </div>
+
+          {#if configService.config.onStartup === 'custom'}
+            <div class="setting-item">
+              <div class="setting-info">
+                <span class="setting-label">Default Startup Paths</span>
+                <span class="setting-desc">Paths to open in separate tabs at launch.</span>
+              </div>
+              <div class="paths-list">
+                {#each configService.config.defaultPaths as path, i (i)}
+                  <div class="path-row">
+                    <input 
+                      type="text" 
+                      class="setting-input path-input" 
+                      placeholder="e.g. C:/Users/Documents" 
+                      bind:value={configService.config.defaultPaths[i]} 
+                    />
+                    <button 
+                      class="path-remove-btn" 
+                      onclick={() => configService.config.defaultPaths.splice(i, 1)} 
+                      aria-label="Remove path"
+                      title="Remove path"
+                    >
+                      <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                      </svg>
+                    </button>
+                  </div>
+                {/each}
+                <button 
+                  class="add-path-btn"
+                  onclick={() => configService.config.defaultPaths = [...configService.config.defaultPaths, '/']}
+                >
+                  <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                  </svg>
+                  <span>Add Path</span>
+                </button>
+              </div>
+            </div>
+          {/if}
+
           <div class="setting-item">
             <div class="setting-info">
               <span class="setting-label">Open Folder/File Mode</span>

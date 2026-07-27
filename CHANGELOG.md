@@ -28,6 +28,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Default startup mode for new installations is now "welcome" (existing configs keep their current setting)
+- Settings modal reorganized into 2 tabs: Appearance (7 items) and Behavior (8 items).
+  On Startup and Default Startup Paths moved from General to Behavior
 - **"Default Startup Path" is now "Default Startup Paths"**: supports multiple paths in Custom startup mode.
   Each path opens in its own tab, shown as a dynamic list with add/remove buttons, visible only when
   "Custom" is selected in the On Startup switcher
