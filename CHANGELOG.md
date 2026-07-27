@@ -46,6 +46,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Recents section moved below Drives in the sidebar
 
 ### Fixed
+- Action-bar buttons (including the split view toggle) now wrap to a new line when the
+  available width is too narrow. Previously the right-side group (view mode + split toggle)
+  was clipped when split view was active in a narrow window, making it impossible to
+  deactivate split view without resizing the window
 - Middle-click on a folder now correctly opens it in a new tab. The WebView's auto-scroll
   mode was being triggered on `mousedown` for button 1, swallowing the `auxclick` event;
   the global `mousedown` handler now prevents default for the middle button (matching the
