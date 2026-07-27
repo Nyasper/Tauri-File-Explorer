@@ -117,9 +117,15 @@ bun run tauri:build
 
 The bundler produces platform-native installers in `src-tauri/target/release/bundle/`:
 
-- **Windows**: `.msi` and `.exe`
+- **Windows**: `.zip` (portable — extract and run, no installation)
 - **macOS**: `.dmg` and `.app`
-- **Linux**: `.deb`, `.AppImage`, `.rpm`
+- **Linux**: `.deb`, `.rpm`, `.AppImage`
+
+## Running on Windows
+
+Download the portable `.zip` from the [latest release](https://github.com/Nyasper/Tauri-File-Explorer/releases/latest), extract it anywhere, and double-click `Tauri File Explorer.exe`.
+
+**Requirements:** Windows 10 (1803+) or Windows 11. The WebView2 Runtime is preinstalled on these systems; no additional setup is needed.
 
 ## Configuration
 

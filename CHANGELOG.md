@@ -58,6 +58,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.0] - 2026-07-25
 
 ### Added
+- `.rpm` bundle target for Red Hat, Fedora, openSUSE, and other RPM-based Linux distros
+- Windows **portable `.zip`** distribution: extract and run, no installer, no SmartScreen warnings on unsigned binaries
+- `.deb` (Debian / Ubuntu), `.AppImage` (universal Linux), `.dmg` + `.app` (macOS)
+
+### Removed
+- `.msi` (WiX) Windows installer: replaced by portable `.zip` for easy local testing without signing
+- `.exe` (NSIS) Windows installer: dropped in favor of portable distribution
+
+### Added
 - Multi-tab browsing with full back/forward history per tab
 - Split-pane view (two independent panes in the same tab)
 - Indexed recursive search with background indexing
