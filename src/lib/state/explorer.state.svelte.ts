@@ -441,6 +441,21 @@ export class ExplorerState {
     this.activePaneSide = side;
   }
 
+  // Open a path in the secondary pane of the given tab. If split view is
+  // not active, it is enabled first; otherwise the existing secondary
+  // pane is navigated to the path. Focus is moved to the secondary pane.
+  async openInSplitView(tabId: string, path: string) {
+    const tab = this.tabs.find((t) => t.id === tabId);
+    if (!tab) return;
+
+    if (!tab.splitView) {
+      this.toggleSplitView(tabId);
+    }
+
+    this.activePaneSide = "secondary";
+    await this.navigate(tabId, "secondary", path);
+  }
+
   // Toggle selection for a path in a given tab/pane
   toggleSelection(tabId: string, side: "primary" | "secondary", path: string, isMulti: boolean) {
     const tab = this.tabs.find((t) => t.id === tabId);

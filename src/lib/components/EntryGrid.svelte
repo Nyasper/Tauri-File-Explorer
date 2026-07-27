@@ -2,10 +2,12 @@
   import { convertFileSrc } from '@tauri-apps/api/core';
   import type { FileEntry } from '../types/explorer.types';
   import { explorerState } from '../state/explorer.state.svelte';
+  import { sidebarState } from '../state/sidebar.state.svelte';
+  import { pinnedFoldersService } from '$lib/services/pinned-folders.service.svelte';
   import { contextMenu, type ContextMenuItem } from '$lib/services/context-menu.service.svelte';
   import { configService } from '$lib/services/config.service.svelte';
   import { formatDisplayName } from '$lib/utils/formater';
-  import { iconOpen, iconRename, iconCopy, iconCut, iconPaste, iconDelete, iconFolderPlus, iconFilePlus, iconRefresh } from './shared/icons';
+  import { iconOpen, iconRename, iconCopy, iconCut, iconPaste, iconDelete, iconFolderPlus, iconFilePlus, iconRefresh, iconPin, iconOpenInNewTab, iconSplitView } from './shared/icons';
 
   // Svelte 5 Props using runes
   let { 
@@ -54,13 +56,30 @@
         disabled: !isSingle,
         action: () => openEntry(entry)
       },
-      {
-        label: 'Rename',
-        icon: iconRename,
-        shortcut: 'F2',
-        disabled: !isSingle,
-        action: () => actions.rename()
-      },
+      ...(entry.is_dir
+        ? [
+            {
+              label: 'Open Folder in a new Tab',
+              icon: iconOpenInNewTab,
+              disabled: !isSingle,
+              action: () => explorerState.addTab(entry.path)
+            },
+            {
+              label: 'Open Folder in Split View',
+              icon: iconSplitView,
+              disabled: !isSingle,
+              action: () => explorerState.openInSplitView(explorerState.activeTabId, entry.path)
+            }
+          ]
+        : []),
+      { isSeparator: true },
+      ...(entry.is_dir
+        ? [{
+            label: pinnedFoldersService.isPinned(entry.path) ? 'Unpin Folder' : 'Pin Folder',
+            icon: iconPin,
+            action: () => { sidebarState.togglePinned(entry.path, entry.name); }
+          }]
+        : []),
       { isSeparator: true },
       {
         label: 'Copy',
@@ -75,6 +94,13 @@
         action: () => actions.cut()
       },
       { isSeparator: true },
+      {
+        label: 'Rename',
+        icon: iconRename,
+        shortcut: 'F2',
+        disabled: !isSingle,
+        action: () => actions.rename()
+      },
       {
         label: `Delete ${selectedCount > 1 ? `(${selectedCount} items)` : ''}`,
         icon: iconDelete,
@@ -196,6 +222,15 @@
     if (e.button !== 0) return; // Only left click clears selection
     explorerState.clearSelection(explorerState.activeTabId, paneSide);
   }
+
+  // Middle-click handler: open folder in a new tab (matches browser/file-manager UX)
+  function handleEntryAuxClick(e: MouseEvent, entry: FileEntry) {
+    if (e.button !== 1) return; // Only middle-click
+    if (!entry.is_dir) return;  // Only folders
+    e.preventDefault();
+    e.stopPropagation();
+    explorerState.addTab(entry.path);
+  }
 </script>
 
 <!-- svelte-ignore a11y_click_events_have_key_events -->
@@ -207,12 +242,14 @@
     <div class="entries-grid">
       {#each files as entry (entry.path)}
         {@const category = getFileCategory(entry)}
-        <div 
+        <div
           class="grid-item"
           class:selected={selectedPaths.has(entry.path)}
+          class:hidden-entry={entry.is_hidden}
           onclick={(e) => handleClick(e, entry)}
           ondblclick={() => handleDoubleClick(entry)}
           oncontextmenu={(e) => handleEntryContextMenu(e, entry)}
+          onauxclick={(e) => handleEntryAuxClick(e, entry)}
           onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); const isMulti = e.ctrlKey || e.metaKey || e.shiftKey; explorerState.toggleSelection(explorerState.activeTabId, paneSide, entry.path, isMulti); } }}
           tabindex="0"
           role="button"
@@ -386,5 +423,24 @@
     padding: 3rem;
     color: var(--text-muted);
     font-style: italic;
+  }
+
+  .grid-item.hidden-entry .item-name {
+    color: var(--text-muted);
+    font-style: italic;
+    opacity: 0.75;
+  }
+
+  .grid-item.hidden-entry .icon-wrapper {
+    opacity: 0.5;
+    filter: grayscale(0.4) drop-shadow(0 4px 6px rgba(0, 0, 0, 0.15));
+  }
+
+  .grid-item.hidden-entry.selected {
+    opacity: 1;
+  }
+
+  .grid-item.hidden-entry.selected .item-name {
+    color: var(--text-primary);
   }
 </style>

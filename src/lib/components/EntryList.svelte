@@ -2,10 +2,12 @@
   import { convertFileSrc } from '@tauri-apps/api/core';
   import type { FileEntry } from '../types/explorer.types';
   import { explorerState } from '../state/explorer.state.svelte';
+  import { sidebarState } from '../state/sidebar.state.svelte';
+  import { pinnedFoldersService } from '$lib/services/pinned-folders.service.svelte';
   import { contextMenu, type ContextMenuItem } from '$lib/services/context-menu.service.svelte';
   import { configService } from '$lib/services/config.service.svelte';
   import { formatBytes, formatDisplayName } from '$lib/utils/formater';
-  import { iconOpen, iconRename, iconCopy, iconCut, iconPaste, iconDelete, iconFolderPlus, iconFilePlus, iconRefresh } from './shared/icons';
+  import { iconOpen, iconRename, iconCopy, iconCut, iconPaste, iconDelete, iconFolderPlus, iconFilePlus, iconRefresh, iconPin, iconOpenInNewTab, iconSplitView } from './shared/icons';
 
   // Svelte 5 Props using runes
   let {
@@ -62,13 +64,30 @@
         disabled: !isSingle,
         action: () => openEntry(entry)
       },
-      {
-        label: 'Rename',
-        icon: iconRename,
-        shortcut: 'F2',
-        disabled: !isSingle,
-        action: () => actions.rename()
-      },
+      ...(entry.is_dir
+        ? [
+            {
+              label: 'Open Folder in a new Tab',
+              icon: iconOpenInNewTab,
+              disabled: !isSingle,
+              action: () => explorerState.addTab(entry.path)
+            },
+            {
+              label: 'Open Folder in Split View',
+              icon: iconSplitView,
+              disabled: !isSingle,
+              action: () => explorerState.openInSplitView(explorerState.activeTabId, entry.path)
+            }
+          ]
+        : []),
+      { isSeparator: true },
+      ...(entry.is_dir
+        ? [{
+            label: pinnedFoldersService.isPinned(entry.path) ? 'Unpin Folder' : 'Pin Folder',
+            icon: iconPin,
+            action: () => { sidebarState.togglePinned(entry.path, entry.name); }
+          }]
+        : []),
       { isSeparator: true },
       {
         label: 'Copy',
@@ -83,6 +102,13 @@
         action: () => actions.cut()
       },
       { isSeparator: true },
+      {
+        label: 'Rename',
+        icon: iconRename,
+        shortcut: 'F2',
+        disabled: !isSingle,
+        action: () => actions.rename()
+      },
       {
         label: `Delete ${selectedCount > 1 ? `(${selectedCount} items)` : ''}`,
         icon: iconDelete,
@@ -199,6 +225,15 @@
     explorerState.clearSelection(explorerState.activeTabId, paneSide);
   }
 
+  // Middle-click handler: open folder in a new tab (matches browser/file-manager UX)
+  function handleEntryAuxClick(e: MouseEvent, entry: FileEntry) {
+    if (e.button !== 1) return; // Only middle-click
+    if (!entry.is_dir) return;  // Only folders
+    e.preventDefault();
+    e.stopPropagation();
+    explorerState.addTab(entry.path);
+  }
+
   // Sort click handler
   function handleSort(column: 'name' | 'size' | 'modified') {
     explorerState.sortPane(explorerState.activeTabId, paneSide, column);
@@ -245,12 +280,14 @@
         </tr>
       {:else}
         {#each files as entry (entry.path)}
-          <tr 
+          <tr
             class="entry-row"
             class:selected={selectedPaths.has(entry.path)}
+            class:hidden-entry={entry.is_hidden}
             onclick={(e) => handleRowClick(e, entry)}
             ondblclick={() => handleDoubleClick(entry)}
             oncontextmenu={(e) => handleEntryContextMenu(e, entry)}
+            onauxclick={(e) => handleEntryAuxClick(e, entry)}
             tabindex="0"
           >
             <!-- Name & Icon -->
@@ -480,5 +517,22 @@
     padding: 3rem;
     color: var(--text-muted);
     font-style: italic;
+  }
+
+  .entry-row.hidden-entry {
+    opacity: 0.7;
+  }
+
+  .entry-row.hidden-entry .entry-name {
+    color: var(--text-muted);
+    font-style: italic;
+  }
+
+  .entry-row.hidden-entry .file-icon {
+    opacity: 0.55;
+  }
+
+  .entry-row.hidden-entry.selected {
+    opacity: 1;
   }
 </style>

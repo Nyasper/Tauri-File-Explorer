@@ -8,7 +8,7 @@
   import { contextMenu, type ContextMenuItem } from '$lib/services/context-menu.service.svelte';
   import { configService } from '$lib/services/config.service.svelte';
   import { dialogService } from '$lib/services/dialog.service.svelte';
-  import { iconRename, iconCopy, iconCut, iconPaste, iconDelete, iconFolderPlus, iconFilePlus } from './shared/icons';
+  import { iconRename, iconCopy, iconCut, iconPaste, iconDelete, iconFolderPlus, iconFilePlus, iconPin, iconOpenInNewTab, iconSplitView } from './shared/icons';
 
   // Svelte 5 props
   let { node, depth = 0 } = $props<{ node: SidebarNode; depth?: number }>();
@@ -150,11 +150,32 @@
     }
   }
 
+  // Middle-click handler: open this folder in a new tab (matches browser/file-manager UX)
+  function handleAuxClick(e: MouseEvent) {
+    if (e.button !== 1) return; // Only middle-click
+    e.preventDefault();
+    e.stopPropagation();
+    explorerState.addTab(node.path);
+  }
+
   function handleContextMenu(e: MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
 
+    const pinLabel = node.userAdded ? 'Unpin Folder' : 'Pin Folder';
+
     const items: ContextMenuItem[] = [
+      {
+        label: 'Open in a new Tab',
+        icon: iconOpenInNewTab,
+        action: () => explorerState.addTab(node.path)
+      },
+      {
+        label: 'Open in Split View',
+        icon: iconSplitView,
+        action: () => explorerState.openInSplitView(explorerState.activeTabId, node.path)
+      },
+      { isSeparator: true },
       {
         label: 'New Folder',
         icon: iconFolderPlus,
@@ -164,6 +185,15 @@
         label: 'New File',
         icon: iconFilePlus,
         action: handleCreateFile
+      },
+      { isSeparator: true },
+      {
+        label: pinLabel,
+        icon: iconPin,
+        action: () =>
+          node.userAdded
+            ? sidebarState.unpinFolder(node.path)
+            : sidebarState.togglePinned(node.path, node.name)
       },
       { isSeparator: true },
       {
@@ -197,7 +227,7 @@
         shortcut: 'Del',
         icon: iconDelete,
         action: handleDelete
-      }
+      },
     ];
 
     contextMenu.show(e, 'folder', items);
@@ -215,6 +245,7 @@
     class="sidebar-item" 
     class:active={isActive}
     onclick={handleClick}
+    onauxclick={handleAuxClick}
     oncontextmenu={handleContextMenu}
   >
     <div class="item-left">

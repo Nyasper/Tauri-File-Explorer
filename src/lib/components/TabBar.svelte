@@ -29,6 +29,17 @@
     explorerState.closeTab(id);
   }
 
+  // Middle-click handler: close the tab (matches browser/file-manager UX).
+  // The last remaining tab cannot be closed (same constraint as the close
+  // button and Ctrl+W).
+  function handleTabAuxClick(e: MouseEvent, tabId: string) {
+    if (e.button !== 1) return; // Only middle-click
+    if (explorerState.tabs.length <= 1) return;
+    e.preventDefault();
+    e.stopPropagation();
+    explorerState.closeTab(tabId);
+  }
+
   function handleTabContextMenu(e: MouseEvent, tabId: string) {
     const items: ContextMenuItem[] = [
       {
@@ -82,6 +93,7 @@
         transition:fade={{ duration: 150 }}
         animate:flip={{ duration: 150 }}
         onclick={() => handleTabClick(tab.id)}
+        onauxclick={(e) => handleTabAuxClick(e, tab.id)}
         oncontextmenu={(e) => handleTabContextMenu(e, tab.id)}
         onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleTabClick(tab.id); }}
         tabindex="0"

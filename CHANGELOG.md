@@ -25,15 +25,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   welcome screen, persisted across launches. Toggle the state from the same menu ("Unpin Folder") or
   remove directly from the sidebar's context menu. Pinned entries support the same expand/collapse
   tree behavior as system Quick Access roots
+- "Open in a new Tab" and "Open in Split View" options in the right-click context menu for folders
+  in the list/grid views and in the sidebar. "Open in a new Tab" opens the folder as a new tab;
+  "Open in Split View" navigates the secondary pane to the folder (enabling split view first if
+  not already active). Both options are shown only for folders and only with a single selection
+- Middle-click (mouse button 1) on a folder in the list/grid views or in the sidebar opens it
+  in a new tab; middle-click on a tab in the TabBar closes that tab. Matches common browser
+  and file-manager behavior. Files and the last remaining tab are unaffected by middle-click
+  (same constraint as `Ctrl+W`)
 
 ### Changed
 - Default startup mode for new installations is now "welcome" (existing configs keep their current setting)
 - Settings modal reorganized into 2 tabs: Appearance (7 items) and Behavior (8 items).
+- Context menu ordering unified across sidebar, list view and grid view with consistent separator groups:
+  open actions → Pin/Unpin → Copy/Cut/Paste → Rename → Delete
   On Startup and Default Startup Paths moved from General to Behavior
 - **"Default Startup Path" is now "Default Startup Paths"**: supports multiple paths in Custom startup mode.
   Each path opens in its own tab, shown as a dynamic list with add/remove buttons, visible only when
   "Custom" is selected in the On Startup switcher
 - Recents section moved below Drives in the sidebar
+
+### Fixed
+- Middle-click on a folder now correctly opens it in a new tab. The WebView's auto-scroll
+  mode was being triggered on `mousedown` for button 1, swallowing the `auxclick` event;
+  the global `mousedown` handler now prevents default for the middle button (matching the
+  existing handling for back/forward mouse buttons)
 
 ## [1.0.0] - 2026-07-25
 

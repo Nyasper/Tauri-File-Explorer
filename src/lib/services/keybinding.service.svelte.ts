@@ -259,8 +259,14 @@ export function useKeybindingService() {
     };
 
     const handleMouseDown = (e: MouseEvent) => {
-      // Prevent default browser back/forward behavior
-      if (e.button === 3 || e.button === 4) {
+      // Prevent default WebView behavior on auxiliary mouse buttons:
+      // - Buttons 3/4: browser back/forward navigation
+      // - Button 1 (middle): auto-scroll mode. We must preventDefault here
+      //   because the scroll mode is triggered on mousedown, before the
+      //   `auxclick` event fires. Without this, middle-click on a folder
+      //   would enable auto-scroll instead of letting our `auxclick`
+      //   handler open the folder in a new tab.
+      if (e.button === 1 || e.button === 3 || e.button === 4) {
         e.preventDefault();
         e.stopPropagation();
       }
