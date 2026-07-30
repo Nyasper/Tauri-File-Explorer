@@ -18,6 +18,29 @@ It pairs a Rust backend (fast, async filesystem operations, background indexing)
 - **Native context menus** and keyboard shortcuts for every action
 - **Configurable**: startup path, view mode, sort, hidden files, extensions, single/double click, confirmations, accent color
 
+## Screenshots
+
+### Welcome screen
+![Welcome screen](./screenshots/welcome_screen.png)
+
+### Explorer list view
+![Explorer list view](./screenshots/explorer-list.png)
+
+### Explorer grid view
+![Explorer grid view](./screenshots/explorer-grid.png)
+
+### Image preview
+![Image preview](./screenshots/img_preview.png)
+
+### Help and shortcuts
+![Help and shortcuts](./screenshots/help_and_shorcuts.png)
+
+### Settings — Appearance
+![Settings — Appearance](./screenshots/conf-1.png)
+
+### Settings — Behavior
+![Settings — Behavior](./screenshots/conf-2.png)
+
 ## Keyboard shortcuts
 
 | Shortcut | Action |
