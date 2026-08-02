@@ -227,6 +227,7 @@
   class="table-container"
   items={files}
   itemHeight={LIST_ROW_HEIGHT}
+  resetKey={paneState.currentPath + '|' + paneState.viewState.searchQuery}
   onclick={handleBackgroundClick}
   oncontextmenu={handleBackgroundContextMenu}
 >

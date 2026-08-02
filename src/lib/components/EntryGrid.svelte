@@ -255,7 +255,7 @@
     class="grid-container"
     items={rows}
     itemHeight={GRID_ROW_HEIGHT}
-    resetKey={files}
+    resetKey={paneState.currentPath + '|' + paneState.viewState.searchQuery}
     bind:viewportWidth={gridWidth}
     onclick={handleBackgroundClick}
     oncontextmenu={handleBackgroundContextMenu}

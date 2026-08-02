@@ -26,6 +26,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   background thread pool, keeping the window responsive while entries stream in
 - Panes now show a "Loading…" message in the content area while the first entries of a folder
   stream in, instead of a misleading "This folder is empty." message
+- Panes remain fully usable while huge folders load: the scroll position no longer snaps back
+  to the top with every streamed batch, and sorting or refreshing now preserves the scroll
+  position (it resets only on real navigation or when the search query changes)
 
 ## [1.1.0] - 2026-07-27
 
