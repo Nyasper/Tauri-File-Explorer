@@ -10,6 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - README now includes a Screenshots section showcasing the welcome screen, list/grid views, image preview, help modal, and Appearance/Behavior settings tabs
 
+### Changed
+- List and grid views are now virtualized: only the entries visible in the viewport (plus a small
+  overscan buffer) are rendered in the DOM, keeping scrolling and navigation fluid in folders with
+  tens of thousands of items (e.g. `C:\Windows\WinSxS`). Image thumbnails also load only for
+  visible entries
+
 ## [1.1.0] - 2026-07-27
 
 ### Added

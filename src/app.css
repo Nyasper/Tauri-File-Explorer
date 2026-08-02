@@ -51,6 +51,13 @@
   --sidebar-width: 260px;
   --header-height: 52px;
   --tabbar-height: 44px;
+
+  /* Virtualized entry views: exact rendered sizes. These MUST stay in sync
+     with the constants in src/lib/utils/virtualization.ts — the virtual
+     scroll math assumes rows measure exactly these pixels. */
+  --list-row-height: 40px;
+  --grid-item-height: 128px;
+  --grid-gap: 12px;
 }
 
 /* Light Theme overrides when explicit class is added or system preference is set */

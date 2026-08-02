@@ -1,13 +1,14 @@
 <script lang="ts">
-  import { convertFileSrc } from '@tauri-apps/api/core';
   import type { FileEntry } from '../types/explorer.types';
   import { explorerState } from '../state/explorer.state.svelte';
   import { sidebarState } from '../state/sidebar.state.svelte';
   import { pinnedFoldersService } from '$lib/services/pinned-folders.service.svelte';
   import { contextMenu, type ContextMenuItem } from '$lib/services/context-menu.service.svelte';
   import { configService } from '$lib/services/config.service.svelte';
-  import { formatBytes, formatDisplayName } from '$lib/utils/formater';
   import { iconOpen, iconRename, iconCopy, iconCut, iconPaste, iconDelete, iconFolderPlus, iconFilePlus, iconRefresh, iconPin, iconOpenInNewTab, iconSplitView } from './shared/icons';
+  import VirtualScroll from './shared/VirtualScroll.svelte';
+  import EntryListRow from './EntryListRow.svelte';
+  import { LIST_ROW_HEIGHT } from '$lib/utils/virtualization';
 
   // Svelte 5 Props using runes
   let {
@@ -123,10 +124,11 @@
   // Handle right click on empty area background
   function handleBackgroundContextMenu(e: MouseEvent) {
     const target = e.target as HTMLElement;
-    const isBackground = target.classList.contains('table-container') || 
-                         target.tagName === 'TABLE' || 
+    const isBackground = target.classList.contains('table-container') ||
+                         target.tagName === 'TABLE' ||
                          target.tagName === 'TBODY' ||
                          target.classList.contains('empty-row') ||
+                         target.closest('.spacer-row') !== null ||
                          (target.tagName === 'TR' && target.parentElement?.tagName === 'TBODY' && files.length === 0);
 
     if (!isBackground) return;
@@ -164,29 +166,6 @@
     ];
 
     contextMenu.show(e, 'empty', items);
-  }
-
-  function formatSize(bytes: number, isDir: boolean): string {
-    if (isDir) {
-      return bytes > 0 ? formatBytes(bytes) : '-';
-    }
-    return formatBytes(bytes);
-  }
-
-  function formatDate(timestamp: number): string {
-    if (!timestamp) return '--';
-    return new Date(timestamp).toLocaleString(undefined, {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  }
-
-  function isImageFile(entry: FileEntry): boolean {
-    const imageExtensions = ['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp', 'bmp', 'ico'];
-    return imageExtensions.includes((entry.extension || '').toLowerCase());
   }
 
   // Open an entry: navigate into folders, open files with the system handler
@@ -242,103 +221,80 @@
 
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
-<div class="table-container" onclick={handleBackgroundClick} oncontextmenu={handleBackgroundContextMenu}>
-  <table class="entries-table">
-    <thead>
-      <tr onclick={(e) => e.stopPropagation()}>
-        <th onclick={() => handleSort('name')} class="col-name clickable">
-          <div class="header-cell">
-            <span>Name</span>
-            {#if sortBy === 'name'}
-              <span class="sort-arrow">{sortOrder === 'asc' ? '↑' : '↓'}</span>
-            {/if}
-          </div>
-        </th>
-        <th onclick={() => handleSort('size')} class="col-size clickable">
-          <div class="header-cell">
-            <span>Size</span>
-            {#if sortBy === 'size'}
-              <span class="sort-arrow">{sortOrder === 'asc' ? '↑' : '↓'}</span>
-            {/if}
-          </div>
-        </th>
-        <th onclick={() => handleSort('modified')} class="col-modified clickable">
-          <div class="header-cell">
-            <span>Date Modified</span>
-            {#if sortBy === 'modified'}
-              <span class="sort-arrow">{sortOrder === 'asc' ? '↑' : '↓'}</span>
-            {/if}
-          </div>
-        </th>
-        <th class="col-permissions">Permissions</th>
-      </tr>
-    </thead>
-    <tbody>
-      {#if files.length === 0}
-        <tr>
-          <td colspan="4" class="empty-row">This folder is empty.</td>
+<VirtualScroll
+  class="table-container"
+  items={files}
+  itemHeight={LIST_ROW_HEIGHT}
+  onclick={handleBackgroundClick}
+  oncontextmenu={handleBackgroundContextMenu}
+>
+  {#snippet children({ visibleItems, topPad, bottomPad })}
+    <table class="entries-table">
+      <thead>
+        <tr onclick={(e) => e.stopPropagation()}>
+          <th onclick={() => handleSort('name')} class="col-name clickable">
+            <div class="header-cell">
+              <span>Name</span>
+              {#if sortBy === 'name'}
+                <span class="sort-arrow">{sortOrder === 'asc' ? '↑' : '↓'}</span>
+              {/if}
+            </div>
+          </th>
+          <th onclick={() => handleSort('size')} class="col-size clickable">
+            <div class="header-cell">
+              <span>Size</span>
+              {#if sortBy === 'size'}
+                <span class="sort-arrow">{sortOrder === 'asc' ? '↑' : '↓'}</span>
+              {/if}
+            </div>
+          </th>
+          <th onclick={() => handleSort('modified')} class="col-modified clickable">
+            <div class="header-cell">
+              <span>Date Modified</span>
+              {#if sortBy === 'modified'}
+                <span class="sort-arrow">{sortOrder === 'asc' ? '↑' : '↓'}</span>
+              {/if}
+            </div>
+          </th>
+          <th class="col-permissions">Permissions</th>
         </tr>
-      {:else}
-        {#each files as entry (entry.path)}
-          <tr
-            class="entry-row"
-            class:selected={selectedPaths.has(entry.path)}
-            class:hidden-entry={entry.is_hidden}
-            onclick={(e) => handleRowClick(e, entry)}
-            ondblclick={() => handleDoubleClick(entry)}
-            oncontextmenu={(e) => handleEntryContextMenu(e, entry)}
-            onauxclick={(e) => handleEntryAuxClick(e, entry)}
-            tabindex="0"
-          >
-            <!-- Name & Icon -->
-            <td class="col-name">
-              <div class="name-cell">
-                {#if entry.is_dir}
-                  <!-- Folder Icon -->
-                  <svg class="file-icon folder" viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-                    <path d="M20 6h-8l-2-2H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2z"/>
-                  </svg>
-                {:else}
-                  <div class="file-icon-cell">
-                    <!-- File Icon (generic, fallback behind thumbnail) -->
-                    <svg class="file-icon file" viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
-                      <polyline points="13 2 13 9 20 9"></polyline>
-                    </svg>
-                    {#if isImageFile(entry)}
-                      <img class="file-thumb" src={convertFileSrc(entry.path)} alt="" onerror={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
-                    {/if}
-                  </div>
-                {/if}
-                <span class="entry-name" title={entry.name}>{formatDisplayName(entry.name, entry.is_dir, configService.config.showExtensions)}</span>
-              </div>
-            </td>
-
-            <!-- Size -->
-            <td class="col-size">
-              <span class="size-text">
-                {formatSize(entry.size, entry.is_dir)}
-              </span>
-            </td>
-
-            <!-- Modified -->
-            <td class="col-modified">
-              <span>{formatDate(entry.modified)}</span>
-            </td>
-
-            <!-- Permissions -->
-            <td class="col-permissions">
-              <span class="permissions-badge">{entry.permissions || 'rw-'}</span>
-            </td>
+      </thead>
+      <tbody>
+        {#if files.length === 0}
+          <tr>
+            <td colspan="4" class="empty-row">This folder is empty.</td>
           </tr>
-        {/each}
-      {/if}
-    </tbody>
-  </table>
-</div>
+        {:else}
+          <!-- Spacer rows simulate the height of non-rendered entries so the
+               scrollbar reflects the full list length (virtualization) -->
+          {#if topPad > 0}
+            <tr class="spacer-row" aria-hidden="true" style="height: {topPad}px;"><td colspan="4"></td></tr>
+          {/if}
+          {#each visibleItems as entry (entry.path)}
+            <EntryListRow
+              {entry}
+              selected={selectedPaths.has(entry.path)}
+              onclick={(e) => handleRowClick(e, entry)}
+              ondblclick={() => handleDoubleClick(entry)}
+              oncontextmenu={(e) => handleEntryContextMenu(e, entry)}
+              onauxclick={(e) => handleEntryAuxClick(e, entry)}
+            />
+          {/each}
+          {#if bottomPad > 0}
+            <tr class="spacer-row" aria-hidden="true" style="height: {bottomPad}px;"><td colspan="4"></td></tr>
+          {/if}
+        {/if}
+      </tbody>
+    </table>
+  {/snippet}
+</VirtualScroll>
 
 <style>
-  .table-container {
+  /*
+   * Applied to VirtualScroll's root element, which lives in the child
+   * component's scope — hence the global selector.
+   */
+  :global(.table-container) {
     width: 100%;
     height: 100%;
     overflow: auto;
@@ -347,6 +303,11 @@
 
   .entries-table {
     width: 100%;
+    /*
+     * Fixed layout: column widths come from the header row only, so they
+     * stay stable no matter which slice of rows the virtual scroll renders.
+     */
+    table-layout: fixed;
     border-collapse: separate;
     border-spacing: 0;
     text-align: left;
@@ -369,6 +330,9 @@
     text-transform: uppercase;
     letter-spacing: 0.05em;
     border-bottom: 1px solid var(--border-color);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .clickable {
@@ -391,12 +355,6 @@
     font-weight: bold;
   }
 
-  th, td {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
   .col-name {
     width: 50%;
   }
@@ -413,103 +371,11 @@
     width: 15%;
   }
 
-  .entry-row {
-    outline: none;
-    transition: background-color var(--transition-fast);
-  }
-
-  .entry-row:hover td {
-    background-color: var(--bg-hover);
-  }
-
-  .entry-row.selected td {
-    background-color: var(--bg-active);
-    border-top: 1px solid var(--accent);
-    border-bottom: 1px solid var(--accent);
-  }
-
-  .entry-row.selected td:first-child {
-    border-left: 1px solid var(--accent);
-    border-top-left-radius: var(--radius-md);
-    border-bottom-left-radius: var(--radius-md);
-  }
-
-  .entry-row.selected td:last-child {
-    border-right: 1px solid var(--accent);
-    border-top-right-radius: var(--radius-md);
-    border-bottom-right-radius: var(--radius-md);
-  }
-
-  .entry-row.selected .file-icon.file {
-    color: var(--accent);
-  }
-
-  td {
-    padding: 0.65rem 1rem;
-    color: var(--text-primary);
-    vertical-align: middle;
-    border-bottom: 1px solid var(--border-color);
-    border-top: 1px solid transparent;
-    transition: background-color var(--transition-fast), border-color var(--transition-fast);
-  }
-
-  .name-cell {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-
-  .file-icon {
-    flex-shrink: 0;
-  }
-
-  .file-icon.folder {
-    color: var(--accent);
-  }
-
-  .file-icon.file {
-    color: var(--text-secondary);
-  }
-
-  .file-icon-cell {
-    position: relative;
-    width: 18px;
-    height: 18px;
-    flex-shrink: 0;
-  }
-
-  .file-thumb {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    border-radius: 2px;
-    z-index: 1;
-    background: var(--bg-primary);
-  }
-
-  .entry-name {
-    font-weight: 500;
-  }
-
-  .size-text {
-    font-family: monospace;
-    font-size: 0.85rem;
-    color: var(--text-secondary);
-  }
-
-  .permissions-badge {
-    font-family: monospace;
-    font-size: 0.8rem;
-    background-color: rgba(255, 255, 255, 0.05);
-    padding: 2px 6px;
-    border-radius: var(--radius-sm);
-    color: var(--text-muted);
-  }
-
-  :root[data-theme="light"] .permissions-badge {
-    background-color: rgba(0, 0, 0, 0.05);
+  /* Virtualization spacer rows: invisible, they only occupy vertical space */
+  .spacer-row,
+  .spacer-row td {
+    padding: 0;
+    border: none;
   }
 
   .empty-row {
@@ -517,22 +383,5 @@
     padding: 3rem;
     color: var(--text-muted);
     font-style: italic;
-  }
-
-  .entry-row.hidden-entry {
-    opacity: 0.7;
-  }
-
-  .entry-row.hidden-entry .entry-name {
-    color: var(--text-muted);
-    font-style: italic;
-  }
-
-  .entry-row.hidden-entry .file-icon {
-    opacity: 0.55;
-  }
-
-  .entry-row.hidden-entry.selected {
-    opacity: 1;
   }
 </style>
