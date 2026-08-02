@@ -565,6 +565,19 @@ export class ExplorerState {
     return this.loadTokens.get(paneId) === token;
   }
 
+  // Base ordering for cached entries: directories first, then
+  // case-insensitive name (mirrors the historical Rust-side listing order,
+  // so cache hits render identically to before streaming existed).
+  private sortEntriesBase(entries: FileEntry[]): FileEntry[] {
+    return entries.sort((a, b) => {
+      if (a.is_dir && !b.is_dir) return -1;
+      if (!a.is_dir && b.is_dir) return 1;
+      const an = a.name.toLowerCase();
+      const bn = b.name.toLowerCase();
+      return an < bn ? -1 : an > bn ? 1 : 0;
+    });
+  }
+
   // Core Directory Loading containing the Path Caching System (Stale-While-Revalidate)
   async loadDirectoryForTab(
     tabId: string,
@@ -615,7 +628,10 @@ export class ExplorerState {
         }
       });
 
-      // Update Cache (raw entries; filtering happens on assignment)
+      // Update Cache (raw entries in base order; filtering happens on
+      // assignment). Streamed chunks arrive unsorted, so the base order
+      // is applied once here before caching.
+      this.sortEntriesBase(accumulated);
       this.cache.set(path, {
         entries: accumulated,
         timestamp: Date.now(),
