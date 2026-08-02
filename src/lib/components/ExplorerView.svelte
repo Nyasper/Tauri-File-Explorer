@@ -497,6 +497,7 @@
                   paneSide="primary"
                   actions={primaryActions}
                   canPaste={clipboardPaths.length > 0}
+                  isLoading={activeTab.isLoading}
                 />
               {:else}
                 <EntryGrid 
@@ -506,6 +507,7 @@
                   paneSide="primary"
                   actions={primaryActions}
                   canPaste={clipboardPaths.length > 0}
+                  isLoading={activeTab.isLoading}
                 />
               {/if}
 
@@ -632,6 +634,7 @@
                     paneSide="secondary"
                     actions={secondaryActions}
                     canPaste={clipboardPaths.length > 0}
+                    isLoading={activeTab.splitView.isLoading}
                   />
                 {:else}
                   <EntryGrid 
@@ -641,6 +644,7 @@
                     paneSide="secondary"
                     actions={secondaryActions}
                     canPaste={clipboardPaths.length > 0}
+                    isLoading={activeTab.splitView.isLoading}
                   />
                 {/if}
 

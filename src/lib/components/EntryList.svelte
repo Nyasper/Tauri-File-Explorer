@@ -17,7 +17,8 @@
     onOpenFile,
     paneSide,
     actions,
-    canPaste
+    canPaste,
+    isLoading = false
   }: {
     files: FileEntry[];
     onNavigate: (path: string) => void;
@@ -34,6 +35,7 @@
       refresh: () => void;
     };
     canPaste: boolean;
+    isLoading?: boolean;
   } = $props();
 
   // Derived reactive views of active tab & active pane, hoisted above the
@@ -262,7 +264,9 @@
       <tbody>
         {#if files.length === 0}
           <tr>
-            <td colspan="4" class="empty-row">This folder is empty.</td>
+            <td colspan="4" class="empty-row">
+              {isLoading ? 'Loading…' : 'This folder is empty.'}
+            </td>
           </tr>
         {:else}
           <!-- Spacer rows simulate the height of non-rendered entries so the

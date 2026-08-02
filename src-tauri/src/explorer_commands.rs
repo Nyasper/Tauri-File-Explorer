@@ -280,27 +280,38 @@ fn build_file_entry(entry: &fs::DirEntry) -> Option<FileEntry> {
 }
 
 #[tauri::command]
-pub fn list_dir(path: String) -> Result<Vec<FileEntry>, String> {
-    let entries = read_validated_dir(&path)?;
-    let mut result: Vec<FileEntry> = Vec::new();
+pub async fn list_dir(path: String) -> Result<Vec<FileEntry>, String> {
+    let dir_path = path.clone();
 
-    for entry in entries {
-        match entry {
-            Ok(e) => {
-                if let Some(file_entry) = build_file_entry(&e) {
-                    result.push(file_entry);
+    // Blocking disk I/O must run off the async runtime's worker threads:
+    // sync commands execute on the main thread and would freeze the UI
+    // for huge folders.
+    let result = tokio::task::spawn_blocking(move || {
+        let entries = read_validated_dir(&dir_path)?;
+        let mut result: Vec<FileEntry> = Vec::new();
+
+        for entry in entries {
+            match entry {
+                Ok(e) => {
+                    if let Some(file_entry) = build_file_entry(&e) {
+                        result.push(file_entry);
+                    }
                 }
+                Err(e) => eprintln!("Error reading entry: {}", e),
             }
-            Err(e) => eprintln!("Error reading entry: {}", e),
         }
-    }
 
-    // Sort: directories first, then files (alphabetically case-insensitive)
-    result.sort_by(|a, b| {
-        b.is_dir
-            .cmp(&a.is_dir)
-            .then_with(|| a.name.to_lowercase().cmp(&b.name.to_lowercase()))
-    });
+        // Sort: directories first, then files (alphabetically case-insensitive)
+        result.sort_by(|a, b| {
+            b.is_dir
+                .cmp(&a.is_dir)
+                .then_with(|| a.name.to_lowercase().cmp(&b.name.to_lowercase()))
+        });
+
+        Ok::<Vec<FileEntry>, String>(result)
+    })
+    .await
+    .map_err(|e| format!("Directory listing task failed: {}", e))??;
 
     // Automatically trigger indexing in the background for faster search inside this directory
     index_directory_in_background(path);
@@ -313,42 +324,52 @@ pub fn list_dir(path: String) -> Result<Vec<FileEntry>, String> {
 /// read. Entries are sent in raw disk order (unsorted); the frontend applies
 /// the final ordering once the stream completes. Returns the total number
 /// of entries sent.
+///
+/// Runs on a blocking thread pool: sync commands execute on the main
+/// thread, which froze the whole UI when streaming huge folders.
 #[tauri::command]
-pub fn list_dir_stream(
+pub async fn list_dir_stream(
     path: String,
     on_chunk: tauri::ipc::Channel<Vec<FileEntry>>,
 ) -> Result<usize, String> {
     const CHUNK_SIZE: usize = 500;
+    let dir_path = path.clone();
 
-    let entries = read_validated_dir(&path)?;
-    let mut chunk: Vec<FileEntry> = Vec::with_capacity(CHUNK_SIZE);
-    let mut total = 0usize;
+    let total = tokio::task::spawn_blocking(move || {
+        let entries = read_validated_dir(&dir_path)?;
+        let mut chunk: Vec<FileEntry> = Vec::with_capacity(CHUNK_SIZE);
+        let mut total = 0usize;
 
-    for entry in entries {
-        match entry {
-            Ok(e) => {
-                if let Some(file_entry) = build_file_entry(&e) {
-                    chunk.push(file_entry);
-                    total += 1;
-                    if chunk.len() >= CHUNK_SIZE {
-                        // If the frontend dropped the channel (e.g. navigated
-                        // away), stop reading early instead of wasting I/O.
-                        if on_chunk
-                            .send(std::mem::replace(&mut chunk, Vec::with_capacity(CHUNK_SIZE)))
-                            .is_err()
-                        {
-                            return Ok(total);
+        for entry in entries {
+            match entry {
+                Ok(e) => {
+                    if let Some(file_entry) = build_file_entry(&e) {
+                        chunk.push(file_entry);
+                        total += 1;
+                        if chunk.len() >= CHUNK_SIZE {
+                            // If the frontend dropped the channel (e.g. navigated
+                            // away), stop reading early instead of wasting I/O.
+                            if on_chunk
+                                .send(std::mem::replace(&mut chunk, Vec::with_capacity(CHUNK_SIZE)))
+                                .is_err()
+                            {
+                                return Ok(total);
+                            }
                         }
                     }
                 }
+                Err(e) => eprintln!("Error reading entry: {}", e),
             }
-            Err(e) => eprintln!("Error reading entry: {}", e),
         }
-    }
 
-    if !chunk.is_empty() {
-        let _ = on_chunk.send(chunk);
-    }
+        if !chunk.is_empty() {
+            let _ = on_chunk.send(chunk);
+        }
+
+        Ok::<usize, String>(total)
+    })
+    .await
+    .map_err(|e| format!("Directory streaming task failed: {}", e))??;
 
     // Automatically trigger indexing in the background for faster search inside this directory
     index_directory_in_background(path);

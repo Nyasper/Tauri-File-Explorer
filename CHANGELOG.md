@@ -20,6 +20,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   listing. A pulsing "Loading…" indicator in the status bar marks panes that are still receiving
   entries, and stale streams from fast successive navigations are discarded automatically
 
+### Fixed
+- Fixed a full app freeze when opening huge folders (e.g. `C:\Windows\WinSxS`): the directory
+  streaming command ran on the UI main thread. Both directory listing commands now run on a
+  background thread pool, keeping the window responsive while entries stream in
+- Panes now show a "Loading…" message in the content area while the first entries of a folder
+  stream in, instead of a misleading "This folder is empty." message
+
 ## [1.1.0] - 2026-07-27
 
 ### Added

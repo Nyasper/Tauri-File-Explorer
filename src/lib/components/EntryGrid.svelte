@@ -23,7 +23,8 @@
     onOpenFile,
     paneSide,
     actions,
-    canPaste
+    canPaste,
+    isLoading = false
   }: {
     files: FileEntry[];
     onNavigate: (path: string) => void;
@@ -40,6 +41,7 @@
       refresh: () => void;
     };
     canPaste: boolean;
+    isLoading?: boolean;
   } = $props();
 
   // Resolve selection from global state
@@ -246,7 +248,7 @@
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 {#if files.length === 0}
   <div class="grid-container" onclick={handleBackgroundClick} oncontextmenu={handleBackgroundContextMenu}>
-    <div class="empty-state">This folder is empty.</div>
+    <div class="empty-state">{isLoading ? 'Loading…' : 'This folder is empty.'}</div>
   </div>
 {:else}
   <VirtualScroll
