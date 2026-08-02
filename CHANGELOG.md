@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-08-02
+
 ### Added
 - README now includes a Screenshots section showcasing the welcome screen, list/grid views, image preview, help modal, and Appearance/Behavior settings tabs
 
@@ -19,6 +21,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   channel, so the first rows paint immediately in huge folders instead of waiting for the full
   listing. A pulsing "Loading…" indicator in the status bar marks panes that are still receiving
   entries, and stale streams from fast successive navigations are discarded automatically
+- Navigating away from a folder that is still loading (or starting a search during the load)
+  now cancels its in-flight directory stream in the backend, freeing disk I/O immediately
+  instead of letting the read finish in the background
+- Directory reads are parallelized across CPU cores: worker threads build entries concurrently
+  while a coordinator streams them in batches, significantly reducing load times for huge
+  folders on multi-core machines
 
 ### Fixed
 - Fixed a full app freeze when opening huge folders (e.g. `C:\Windows\WinSxS`): the directory
@@ -29,12 +37,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Panes remain fully usable while huge folders load: the scroll position no longer snaps back
   to the top with every streamed batch, and sorting or refreshing now preserves the scroll
   position (it resets only on real navigation or when the search query changes)
-- Navigating away from a folder that is still loading (or starting a search during the load)
-  now cancels its in-flight directory stream in the backend, freeing disk I/O immediately
-  instead of letting the read finish in the background
-- Directory reads are parallelized across CPU cores: worker threads build entries concurrently
-  while a coordinator streams them in batches, significantly reducing load times for huge
-  folders on multi-core machines
 
 ## [1.1.0] - 2026-07-27
 
@@ -155,5 +157,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Asset protocol enabled with `**` scope (required for image thumbnails)
 - All filesystem operations go through Tauri commands; no direct `invoke` from components
 
+[1.2.0]: https://github.com/Nyasper/Tauri-File-Explorer/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/Nyasper/Tauri-File-Explorer/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/Nyasper/Tauri-File-Explorer/releases/tag/v1.0.0
