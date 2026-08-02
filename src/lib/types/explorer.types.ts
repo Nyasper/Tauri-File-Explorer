@@ -28,6 +28,7 @@ export interface Tab {
   files: FileEntry[]; // Loaded file entries specific to this tab
   selectedPaths: SvelteSet<string>; // Selection state specific to this tab/pane
   splitView: Tab | null; // Support side-by-side active paths within the same tab
+  isLoading: boolean; // True while directory entries are being streamed in
 }
 
 export interface CacheEntry {

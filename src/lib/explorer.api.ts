@@ -1,4 +1,4 @@
-import { invoke } from "@tauri-apps/api/core";
+import { invoke, Channel } from "@tauri-apps/api/core";
 import type { FileEntry } from "./types/explorer.types";
 import type { SidebarFolder, SystemPathEntry, DriveEntry } from "./types/sidebar.types";
 
@@ -9,6 +9,21 @@ import type { SidebarFolder, SystemPathEntry, DriveEntry } from "./types/sidebar
  */
 export async function listDir(path: string): Promise<FileEntry[]> {
   return invoke<FileEntry[]>("list_dir", { path });
+}
+
+/**
+ * Streams the contents of the directory at the specified path in chunks,
+ * invoking `onChunk` for each batch of entries as it is read from disk
+ * (raw disk order, unsorted). Resolves with the total number of entries
+ * once the stream completes.
+ */
+export async function listDirStream(
+  path: string,
+  onChunk: (entries: FileEntry[]) => void,
+): Promise<number> {
+  const channel = new Channel<FileEntry[]>();
+  channel.onmessage = onChunk;
+  return invoke<number>("list_dir_stream", { path, onChunk: channel });
 }
 
 /**

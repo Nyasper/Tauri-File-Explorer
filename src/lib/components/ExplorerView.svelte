@@ -513,6 +513,9 @@
           <div class="pane-footer">
             <div class="footer-left">
               <span>{activeTab.files.length} items</span>
+              {#if activeTab.isLoading}
+                <span class="loading-indicator">Loading…</span>
+              {/if}
               {#if primarySelected.size > 0}
                 <span class="selection-count">| {primarySelected.size} items selected</span>
               {/if}
@@ -645,6 +648,9 @@
             <div class="pane-footer">
               <div class="footer-left">
                 <span>{activeTab.splitView.files.length} items</span>
+                {#if activeTab.splitView.isLoading}
+                  <span class="loading-indicator">Loading…</span>
+                {/if}
                 {#if secondarySelected.size > 0}
                   <span class="selection-count">| {secondarySelected.size} items selected</span>
                 {/if}
@@ -888,6 +894,17 @@
   .selection-count {
     color: var(--accent);
     font-weight: 500;
+  }
+
+  .loading-indicator {
+    color: var(--accent);
+    font-weight: 500;
+    animation: loading-pulse 1.2s ease-in-out infinite;
+  }
+
+  @keyframes loading-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.45; }
   }
 
   .no-tab {

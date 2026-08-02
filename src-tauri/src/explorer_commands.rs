@@ -231,9 +231,9 @@ pub fn index_directory_in_background(path: String) {
 
 // --- Tauri Commands ---
 
-#[tauri::command]
-pub fn list_dir(path: String) -> Result<Vec<FileEntry>, String> {
-    let root = Path::new(&path);
+/// Validates that `path` exists and is a directory, returning its read_dir iterator.
+fn read_validated_dir(path: &str) -> Result<fs::ReadDir, String> {
+    let root = Path::new(path);
 
     if !root.exists() {
         return Err(format!("The path does not exist: {}", path));
@@ -242,47 +242,57 @@ pub fn list_dir(path: String) -> Result<Vec<FileEntry>, String> {
         return Err(format!("The path is not a directory: {}", path));
     }
 
-    let entries = fs::read_dir(root).map_err(|e| format!("Failed to read directory: {}", e))?;
+    fs::read_dir(root).map_err(|e| format!("Failed to read directory: {}", e))
+}
+
+/// Builds a FileEntry from a DirEntry. Returns None (and logs) when the
+/// entry's metadata cannot be read, so callers can skip it.
+fn build_file_entry(entry: &fs::DirEntry) -> Option<FileEntry> {
+    let metadata = match entry.metadata() {
+        Ok(m) => m,
+        Err(e) => {
+            eprintln!("Error reading metadata for {:?}: {}", entry.path(), e);
+            return None;
+        }
+    };
+
+    let name = entry.file_name().to_string_lossy().to_string();
+    let path_str = entry.path().to_string_lossy().to_string();
+    let modified = metadata.modified()
+        .ok()
+        .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+        .map(|d| d.as_millis() as u64)
+        .unwrap_or(0);
+
+    let is_hidden = is_hidden_entry(&name, &metadata);
+
+    Some(FileEntry {
+        name,
+        path: path_str,
+        is_dir: metadata.is_dir(),
+        size: metadata.len(),
+        modified,
+        readonly: metadata.permissions().readonly(),
+        permissions: Some(get_permissions_string(&metadata)),
+        extension: entry.path().extension().map(|e| e.to_string_lossy().to_string()),
+        is_hidden,
+    })
+}
+
+#[tauri::command]
+pub fn list_dir(path: String) -> Result<Vec<FileEntry>, String> {
+    let entries = read_validated_dir(&path)?;
     let mut result: Vec<FileEntry> = Vec::new();
 
     for entry in entries {
-        let entry = match entry {
-            Ok(e) => e,
-            Err(e) => {
-                eprintln!("Error reading entry: {}", e);
-                continue;
+        match entry {
+            Ok(e) => {
+                if let Some(file_entry) = build_file_entry(&e) {
+                    result.push(file_entry);
+                }
             }
-        };
-
-        let metadata = match entry.metadata() {
-            Ok(m) => m,
-            Err(e) => {
-                eprintln!("Error reading metadata for {:?}: {}", entry.path(), e);
-                continue;
-            }
-        };
-
-        let name = entry.file_name().to_string_lossy().to_string();
-        let path_str = entry.path().to_string_lossy().to_string();
-        let modified = metadata.modified()
-            .ok()
-            .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
-            .map(|d| d.as_millis() as u64)
-            .unwrap_or(0);
-
-        let is_hidden = is_hidden_entry(&name, &metadata);
-
-        result.push(FileEntry {
-            name,
-            path: path_str,
-            is_dir: metadata.is_dir(),
-            size: metadata.len(),
-            modified,
-            readonly: metadata.permissions().readonly(),
-            permissions: Some(get_permissions_string(&metadata)),
-            extension: entry.path().extension().map(|e| e.to_string_lossy().to_string()),
-            is_hidden,
-        });
+            Err(e) => eprintln!("Error reading entry: {}", e),
+        }
     }
 
     // Sort: directories first, then files (alphabetically case-insensitive)
@@ -296,6 +306,54 @@ pub fn list_dir(path: String) -> Result<Vec<FileEntry>, String> {
     index_directory_in_background(path);
 
     Ok(result)
+}
+
+/// Streams directory entries in chunks through the given channel so the
+/// frontend can paint the first rows while huge folders are still being
+/// read. Entries are sent in raw disk order (unsorted); the frontend applies
+/// the final ordering once the stream completes. Returns the total number
+/// of entries sent.
+#[tauri::command]
+pub fn list_dir_stream(
+    path: String,
+    on_chunk: tauri::ipc::Channel<Vec<FileEntry>>,
+) -> Result<usize, String> {
+    const CHUNK_SIZE: usize = 500;
+
+    let entries = read_validated_dir(&path)?;
+    let mut chunk: Vec<FileEntry> = Vec::with_capacity(CHUNK_SIZE);
+    let mut total = 0usize;
+
+    for entry in entries {
+        match entry {
+            Ok(e) => {
+                if let Some(file_entry) = build_file_entry(&e) {
+                    chunk.push(file_entry);
+                    total += 1;
+                    if chunk.len() >= CHUNK_SIZE {
+                        // If the frontend dropped the channel (e.g. navigated
+                        // away), stop reading early instead of wasting I/O.
+                        if on_chunk
+                            .send(std::mem::replace(&mut chunk, Vec::with_capacity(CHUNK_SIZE)))
+                            .is_err()
+                        {
+                            return Ok(total);
+                        }
+                    }
+                }
+            }
+            Err(e) => eprintln!("Error reading entry: {}", e),
+        }
+    }
+
+    if !chunk.is_empty() {
+        let _ = on_chunk.send(chunk);
+    }
+
+    // Automatically trigger indexing in the background for faster search inside this directory
+    index_directory_in_background(path);
+
+    Ok(total)
 }
 
 #[tauri::command]

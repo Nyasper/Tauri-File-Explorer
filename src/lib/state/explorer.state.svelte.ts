@@ -244,6 +244,7 @@ export class ExplorerState {
         files: [],
         selectedPaths: new SvelteSet<string>(),
         splitView: null,
+        isLoading: false,
       });
 
       this.tabs = session.tabs.map((t) => {
@@ -349,6 +350,7 @@ export class ExplorerState {
       files: [],
       selectedPaths: new SvelteSet<string>(),
       splitView: null,
+      isLoading: false,
     };
     this.tabs.push(newTab);
     this.activeTabId = newTab.id;
@@ -376,6 +378,7 @@ export class ExplorerState {
       files: [...pane.files],
       selectedPaths: new SvelteSet<string>(pane.selectedPaths),
       splitView: null,
+      isLoading: false,
     });
 
     const duplicate: Tab = {
@@ -387,6 +390,7 @@ export class ExplorerState {
       files: [...original.files],
       selectedPaths: new SvelteSet<string>(original.selectedPaths),
       splitView: original.splitView ? clonePane(original.splitView) : null,
+      isLoading: false,
     };
 
     const index = this.tabs.findIndex((t) => t.id === tabId);
@@ -429,6 +433,7 @@ export class ExplorerState {
         files: [...tab.files],
         selectedPaths: new SvelteSet<string>(),
         splitView: null,
+        isLoading: false,
       };
       this.activePaneSide = "secondary";
       // Load directory details for split view
@@ -545,6 +550,21 @@ export class ExplorerState {
     await this.loadDirectoryForTab(tabId, side, pane.currentPath);
   }
 
+  // Monotonic load tokens per pane: every new load bumps the token, so
+  // chunks/completions from a superseded stream (navigation away, refresh,
+  // search) are discarded instead of clobbering the pane's current state.
+  private loadTokens = new Map<string, number>();
+
+  private nextLoadToken(paneId: string): number {
+    const token = (this.loadTokens.get(paneId) ?? 0) + 1;
+    this.loadTokens.set(paneId, token);
+    return token;
+  }
+
+  private isCurrentLoad(paneId: string, token: number): boolean {
+    return this.loadTokens.get(paneId) === token;
+  }
+
   // Core Directory Loading containing the Path Caching System (Stale-While-Revalidate)
   async loadDirectoryForTab(
     tabId: string,
@@ -562,6 +582,7 @@ export class ExplorerState {
     if (cached) {
       // Instantly populate files from cache for fluid immediate rendering
       pane.files = this.filterHiddenEntries(cached.entries);
+      pane.isLoading = false;
 
       // If cached less than 10 seconds ago, don't trigger background reload
       const ageMs = Date.now() - cached.timestamp;
@@ -570,19 +591,42 @@ export class ExplorerState {
       }
     }
 
-    // 2. Fetch from Tauri API (async revalidation)
+    // 2. Fetch from Tauri API (async revalidation), streamed in chunks so
+    // the first rows paint immediately in huge folders.
+    const token = this.nextLoadToken(pane.id);
+    const isCurrent = () =>
+      this.isCurrentLoad(pane.id, token) && pane.currentPath === path;
+
+    pane.isLoading = true;
+
+    // Cold loads (no cache) paint progressively as chunks arrive; warm
+    // revalidations keep the cached list on screen and swap at the end.
+    const paintProgressively = !cached;
+    const accumulated: FileEntry[] = [];
+    if (paintProgressively) {
+      pane.files = [];
+    }
+
     try {
-      const freshEntries = await explorerApi.listDir(path);
+      await explorerApi.listDirStream(path, (chunk) => {
+        accumulated.push(...chunk);
+        if (paintProgressively && isCurrent()) {
+          pane.files = this.filterHiddenEntries([...accumulated]);
+        }
+      });
 
       // Update Cache (raw entries; filtering happens on assignment)
       this.cache.set(path, {
-        entries: freshEntries,
+        entries: accumulated,
         timestamp: Date.now(),
       });
 
-      // Update pane state (only if pane path didn't change while loading)
-      if (pane.currentPath === path) {
-        pane.files = this.filterHiddenEntries(freshEntries);
+      // Final assignment with the pane's active sort applied (streamed
+      // chunks arrive in raw disk order)
+      if (isCurrent()) {
+        pane.files = this.filterHiddenEntries(accumulated);
+        this.applyLocalSort(pane);
+        pane.isLoading = false;
       }
 
       // Update the sidebar tree dynamically to reflect changes in background
@@ -596,6 +640,9 @@ export class ExplorerState {
       // Keep cached files if load fails, or clear if cache didn't exist
       if (!cached && pane.currentPath === path) {
         pane.files = [];
+      }
+      if (this.isCurrentLoad(pane.id, token)) {
+        pane.isLoading = false;
       }
     }
   }
@@ -611,6 +658,11 @@ export class ExplorerState {
 
     const pane = side === "secondary" && tab.splitView ? tab.splitView : tab;
     pane.viewState.searchQuery = query;
+
+    // Invalidate any in-flight directory stream so late chunks don't
+    // overwrite the incoming search results.
+    this.nextLoadToken(pane.id);
+    pane.isLoading = false;
 
     if (!query.trim()) {
       // Revert to loading standard directory entries

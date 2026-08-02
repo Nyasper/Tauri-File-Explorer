@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   overscan buffer) are rendered in the DOM, keeping scrolling and navigation fluid in folders with
   tens of thousands of items (e.g. `C:\Windows\WinSxS`). Image thumbnails also load only for
   visible entries
+- Directory contents now load progressively: the backend streams entries in batches over a Tauri
+  channel, so the first rows paint immediately in huge folders instead of waiting for the full
+  listing. A pulsing "Loading…" indicator in the status bar marks panes that are still receiving
+  entries, and stale streams from fast successive navigations are discarded automatically
 
 ## [1.1.0] - 2026-07-27
 
