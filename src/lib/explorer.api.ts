@@ -27,6 +27,14 @@ export async function listDirStream(
 }
 
 /**
+ * Cancels any in-flight directory stream for the specified path.
+ * Instant and harmless when no stream is running.
+ */
+export async function cancelDirStream(path: string): Promise<void> {
+  return invoke<void>("cancel_dir_stream", { path });
+}
+
+/**
  * Creates a file or directory at the specified path.
  */
 export async function createFile(path: string, isDir: boolean): Promise<void> {

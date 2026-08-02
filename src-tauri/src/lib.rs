@@ -8,6 +8,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             explorer_commands::list_dir,
             explorer_commands::list_dir_stream,
+            explorer_commands::cancel_dir_stream,
             explorer_commands::create_file,
             explorer_commands::rename_file,
             explorer_commands::delete_file,

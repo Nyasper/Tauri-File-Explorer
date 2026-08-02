@@ -202,6 +202,8 @@ Tauri must handle file system operations, heavy CPU operations, and multi-thread
 ### Commands to implement:
 
 - `list_dir(path: String) -> Result<Vec<FileEntry>, String>`
+- `list_dir_stream(path: String, on_chunk: Channel<Vec<FileEntry>>) -> Result<usize, String>`
+- `cancel_dir_stream(path: String) -> Result<(), String>`
 - `create_file(path: String, is_dir: bool) -> Result<(), String>`
 - `rename_file(old_path: String, new_path: String) -> Result<(), String>`
 - `delete_file(path: String) -> Result<(), String>`

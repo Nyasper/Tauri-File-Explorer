@@ -29,6 +29,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Panes remain fully usable while huge folders load: the scroll position no longer snaps back
   to the top with every streamed batch, and sorting or refreshing now preserves the scroll
   position (it resets only on real navigation or when the search query changes)
+- Navigating away from a folder that is still loading (or starting a search during the load)
+  now cancels its in-flight directory stream in the backend, freeing disk I/O immediately
+  instead of letting the read finish in the background
+- Directory reads are parallelized across CPU cores: worker threads build entries concurrently
+  while a coordinator streams them in batches, significantly reducing load times for huge
+  folders on multi-core machines
 
 ## [1.1.0] - 2026-07-27
 

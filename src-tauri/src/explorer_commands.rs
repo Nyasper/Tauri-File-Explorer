@@ -56,6 +56,30 @@ fn get_search_index() -> &'static Mutex<HashMap<String, Vec<FileEntry>>> {
     SEARCH_INDEX.get_or_init(|| Mutex::new(HashMap::new()))
 }
 
+// Generation counters per path for directory streaming cancellation.
+// Bumping a path's generation makes any in-flight stream for that path
+// abort on its next check (navigation away, refresh, newer stream).
+static DIR_STREAM_GENERATIONS: OnceLock<Mutex<HashMap<String, u64>>> = OnceLock::new();
+
+fn get_stream_generations() -> &'static Mutex<HashMap<String, u64>> {
+    DIR_STREAM_GENERATIONS.get_or_init(|| Mutex::new(HashMap::new()))
+}
+
+/// Bumps the generation for `path` and returns the new value. Any in-flight
+/// stream holding an older generation for the same path will abort.
+fn bump_stream_generation(path: &str) -> u64 {
+    let mut generations = get_stream_generations().lock().unwrap();
+    let generation = generations.entry(path.to_string()).or_insert(0);
+    *generation += 1;
+    *generation
+}
+
+/// Returns true while `generation` is still the latest one for `path`.
+fn is_current_stream_generation(path: &str, generation: u64) -> bool {
+    let generations = get_stream_generations().lock().unwrap();
+    generations.get(path).copied().unwrap_or(0) == generation
+}
+
 // Cross-platform helper to extract permissions as a string representation
 #[cfg(unix)]
 fn get_permissions_string(metadata: &fs::Metadata) -> String {
@@ -321,12 +345,14 @@ pub async fn list_dir(path: String) -> Result<Vec<FileEntry>, String> {
 
 /// Streams directory entries in chunks through the given channel so the
 /// frontend can paint the first rows while huge folders are still being
-/// read. Entries are sent in raw disk order (unsorted); the frontend applies
-/// the final ordering once the stream completes. Returns the total number
-/// of entries sent.
+/// read. Entries are sent unordered (built in parallel across worker
+/// threads); the frontend applies the final ordering once the stream
+/// completes. Returns the total number of entries sent.
 ///
 /// Runs on a blocking thread pool: sync commands execute on the main
-/// thread, which froze the whole UI when streaming huge folders.
+/// thread, which froze the whole UI when streaming huge folders. The
+/// stream aborts early when its generation is superseded (navigation,
+/// refresh, explicit cancel_dir_stream) or the frontend drops the channel.
 #[tauri::command]
 pub async fn list_dir_stream(
     path: String,
@@ -335,38 +361,88 @@ pub async fn list_dir_stream(
     const CHUNK_SIZE: usize = 500;
     let dir_path = path.clone();
 
+    // Register this stream's generation: any previous stream for the same
+    // path becomes stale and aborts on its next check.
+    let generation = bump_stream_generation(&dir_path);
+
     let total = tokio::task::spawn_blocking(move || {
         let entries = read_validated_dir(&dir_path)?;
-        let mut chunk: Vec<FileEntry> = Vec::with_capacity(CHUNK_SIZE);
-        let mut total = 0usize;
 
-        for entry in entries {
-            match entry {
-                Ok(e) => {
-                    if let Some(file_entry) = build_file_entry(&e) {
-                        chunk.push(file_entry);
-                        total += 1;
-                        if chunk.len() >= CHUNK_SIZE {
-                            // If the frontend dropped the channel (e.g. navigated
-                            // away), stop reading early instead of wasting I/O.
-                            if on_chunk
-                                .send(std::mem::replace(&mut chunk, Vec::with_capacity(CHUNK_SIZE)))
-                                .is_err()
-                            {
-                                return Ok(total);
-                            }
+        // Cheap enumeration pass (on Windows the directory walk already
+        // carries the base metadata), then the FileEntries are built in
+        // parallel across worker threads.
+        let dir_entries: Vec<fs::DirEntry> = entries
+            .filter_map(|entry| match entry {
+                Ok(e) => Some(e),
+                Err(e) => {
+                    eprintln!("Error reading entry: {}", e);
+                    None
+                }
+            })
+            .collect();
+
+        let (tx, rx) = std::sync::mpsc::channel::<FileEntry>();
+        let next_index = std::sync::atomic::AtomicUsize::new(0);
+
+        std::thread::scope(|scope| {
+            let workers = std::thread::available_parallelism()
+                .map(|n| n.get())
+                .unwrap_or(4)
+                .min(8);
+
+            for _ in 0..workers {
+                let tx = tx.clone();
+                let next_index = &next_index;
+                let dir_entries = &dir_entries;
+                scope.spawn(move || loop {
+                    let i = next_index.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                    if i >= dir_entries.len() {
+                        break;
+                    }
+                    if let Some(file_entry) = build_file_entry(&dir_entries[i]) {
+                        // Receiver dropped (aborted stream): stop working.
+                        if tx.send(file_entry).is_err() {
+                            break;
                         }
                     }
-                }
-                Err(e) => eprintln!("Error reading entry: {}", e),
+                });
             }
-        }
+            // Drop the coordinator's own sender so `rx` terminates once all
+            // workers finish.
+            drop(tx);
 
-        if !chunk.is_empty() {
-            let _ = on_chunk.send(chunk);
-        }
+            // Coordinator: pack entries into chunks and forward them to the
+            // frontend, aborting early when this stream was superseded.
+            let mut chunk: Vec<FileEntry> = Vec::with_capacity(CHUNK_SIZE);
+            let mut total = 0usize;
 
-        Ok::<usize, String>(total)
+            for file_entry in rx {
+                if total % CHUNK_SIZE == 0
+                    && !is_current_stream_generation(&dir_path, generation)
+                {
+                    // Leaving the loop drops `rx`; workers abort on their
+                    // next failed send. Scope joins them before returning.
+                    return Ok(total);
+                }
+                chunk.push(file_entry);
+                total += 1;
+                if chunk.len() >= CHUNK_SIZE {
+                    if on_chunk
+                        .send(std::mem::replace(&mut chunk, Vec::with_capacity(CHUNK_SIZE)))
+                        .is_err()
+                    {
+                        // Frontend dropped the channel: stop early.
+                        return Ok(total);
+                    }
+                }
+            }
+
+            if !chunk.is_empty() {
+                let _ = on_chunk.send(chunk);
+            }
+
+            Ok::<usize, String>(total)
+        })
     })
     .await
     .map_err(|e| format!("Directory streaming task failed: {}", e))??;
@@ -375,6 +451,14 @@ pub async fn list_dir_stream(
     index_directory_in_background(path);
 
     Ok(total)
+}
+
+/// Cancels any in-flight directory stream for `path` by bumping its
+/// generation. Instant and harmless when no stream is running.
+#[tauri::command]
+pub fn cancel_dir_stream(path: String) -> Result<(), String> {
+    bump_stream_generation(&path);
+    Ok(())
 }
 
 #[tauri::command]

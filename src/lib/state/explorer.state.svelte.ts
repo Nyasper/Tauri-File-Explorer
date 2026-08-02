@@ -590,6 +590,13 @@ export class ExplorerState {
     const pane = side === "secondary" && tab.splitView ? tab.splitView : tab;
     if (!path.trim()) return;
 
+    // Navigating away from a path with an in-flight stream cancels the
+    // backend read, so leaving a huge folder stops its disk I/O instead
+    // of letting it run to completion in the background.
+    if (pane.isLoading && pane.currentPath !== path) {
+      void explorerApi.cancelDirStream(pane.currentPath);
+    }
+
     // 1. Check in-memory Cache
     const cached = this.cache.get(path);
     if (cached) {
@@ -676,8 +683,11 @@ export class ExplorerState {
     pane.viewState.searchQuery = query;
 
     // Invalidate any in-flight directory stream so late chunks don't
-    // overwrite the incoming search results.
+    // overwrite the incoming search results, and cancel the backend read.
     this.nextLoadToken(pane.id);
+    if (pane.isLoading) {
+      void explorerApi.cancelDirStream(pane.currentPath);
+    }
     pane.isLoading = false;
 
     if (!query.trim()) {
